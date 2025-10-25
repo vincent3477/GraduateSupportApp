@@ -96,35 +96,61 @@ const SupportDashboard = ({ user, prefs, recs }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {recs.map((r, i) => (
-          <motion.div
-            key={i}
-            layout
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: i * 0.03 }}
-            className="rounded-2xl border border-[#e4dcc4] bg-white/80 p-5 shadow-sm shadow-[#2F4D6A]/5 backdrop-blur"
-          >
-            <div className="mb-2 flex items-center gap-2 text-slate-700">
-              {r.name && <Sparkles size={18}/>}
-              {r.type === "next" && <Sparkles size={18} />}
-              {r.type === "goal" && <Target size={18} />}
-              {r.type === "tip" && <MessageSquareText size={18} />}
-              {r.type === "quote" && <Quote size={18} />}
-              {r.type === "selfcare" && <Heart size={18} />}
-              {r.type === "community" && <UsersIcon size={18} />}
+      {recs.map((r, i) => (
+        <motion.div
+          key={i}
+          layout
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: i * 0.03 }}
+          className="rounded-2xl border border-[#e4dcc4] bg-white/80 p-5 shadow-sm shadow-[#2F4D6A]/5 backdrop-blur flex flex-col"
+        >
+          {/* Header with icon and title */}
+          <div className="mb-3 flex items-start gap-2 text-slate-700">
+            {r.name && <Sparkles size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "next" && <Sparkles size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "goal" && <Target size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "tip" && <MessageSquareText size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "quote" && <Quote size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "selfcare" && <Heart size={18} className="mt-0.5 flex-shrink-0" />}
+            {r.type === "community" && <UsersIcon size={18} className="mt-0.5 flex-shrink-0" />}
+            
+            <div className="flex-1">
               <h3 className="font-semibold">{r.name}</h3>
-              <h4 className="font-regular">{r.desc}</h4>
+              {r.desc && <h4 className="font-normal text-slate-600">{r.desc}</h4>}
             </div>
-            <p className="text-sm text-slate-700">{r.detail}</p>
-            {r.action && (
-              <div className="mt-3 rounded-xl bg-[#f9f6ec] p-3 text-sm text-slate-600">
-                <span className="font-medium">Try this gentle next step:</span> {r.action}
-              </div>
-            )}
-          </motion.div>
-        ))}
-      </div>
+          </div>
+
+          {/* Detail text */}
+          <p className="mb-3 text-sm text-slate-700">{r.detail}</p>
+
+          {/* Action callout */}
+          {r.action && (
+            <div className="mb-3 rounded-xl bg-[#f9f6ec] p-3 text-sm text-slate-600">
+              <span className="font-medium">Try this gentle next step:</span> {r.action}
+            </div>
+          )}
+
+          {/* Spacer to push checkbox to bottom */}
+          <div className="flex-1" />
+
+          {/* Completion checkbox - bottom right */}
+          <div className="flex justify-end">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={r.completed}
+                onChange={() => toggleCompleted(i)}
+                className="h-4 w-4 cursor-pointer accent-green-600"
+              />
+              {r.completed && (
+                <span className="text-xs text-green-700">Done</span>
+              )}
+            </label>
+          </div>
+        </motion.div>
+      ))}
+    </div>
 
       <div className="mt-6">
         <CommunityChat />

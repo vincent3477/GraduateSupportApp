@@ -20,7 +20,8 @@ from sentence_transformers import SentenceTransformer
 # - 384-dimensional embeddings
 # - Good balance of speed and quality
 # - Perfect for sentence/paragraph encoding
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# - local_files_only=True prevents network calls (no HuggingFace update checks)
+model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
 
 
 def create_user_text(session):
@@ -38,7 +39,7 @@ def create_user_text(session):
     Example:
         >>> session = {
         ...     'major': 'Computer Science',
-        ...     'location': 'Santa Cruz, CA',
+        ...     'location': 'Santa Cruz, CA',  # Location excluded from embedding
         ...     'preferences': {
         ...         'favorites': ['Coding side projects', 'Reading sci-fi'],
         ...         'goals': ['Land a SWE role', 'Build portfolio']
@@ -46,7 +47,7 @@ def create_user_text(session):
         ... }
         >>> text = create_user_text(session)
         >>> print(text)
-        Major: Computer Science. Location: Santa Cruz, CA. Interests: Coding side projects, Reading sci-fi. Career goals: Land a SWE role, Build portfolio
+        Major: Computer Science. Interests: Coding side projects, Reading sci-fi. Career goals: Land a SWE role, Build portfolio
 
     Notes:
         - Only includes fields that are present and non-empty
@@ -62,11 +63,10 @@ def create_user_text(session):
         if major:  # Check it's not empty after stripping
             parts.append(f"Major: {major}")
 
-    # Extract location (geographic context)
-    if session.get('location'):
-        location = session['location'].strip()
-        if location:
-            parts.append(f"Location: {location}")
+    # NOTE: Location is excluded from embeddings because:
+    # - Text embeddings capture semantic similarity, not geographic proximity
+    # - "Santa Cruz" and "San Francisco" aren't semantically similar as text
+    # - Use ChromaDB metadata filtering for location-based matching instead
 
     # Extract preferences if they exist
     preferences = session.get('preferences')

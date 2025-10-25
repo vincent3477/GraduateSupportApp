@@ -106,13 +106,15 @@ const SupportDashboard = ({ user, prefs, recs }) => {
             className="rounded-2xl border border-[#e4dcc4] bg-white/80 p-5 shadow-sm shadow-[#2F4D6A]/5 backdrop-blur"
           >
             <div className="mb-2 flex items-center gap-2 text-slate-700">
+              {r.name && <Sparkles size={18}/>}
               {r.type === "next" && <Sparkles size={18} />}
               {r.type === "goal" && <Target size={18} />}
               {r.type === "tip" && <MessageSquareText size={18} />}
               {r.type === "quote" && <Quote size={18} />}
               {r.type === "selfcare" && <Heart size={18} />}
               {r.type === "community" && <UsersIcon size={18} />}
-              <h3 className="font-semibold">{r.title}</h3>
+              <h3 className="font-semibold">{r.name}</h3>
+              <h4 className="font-regular">{r.desc}</h4>
             </div>
             <p className="text-sm text-slate-700">{r.detail}</p>
             {r.action && (

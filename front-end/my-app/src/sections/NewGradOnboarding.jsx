@@ -28,90 +28,40 @@ const mockApi = {
 };
 
 // ----------------------------- Simple recommendation/LLM-ish generator
-function generateRecommendations({ name, major, location }, favorites, goals) {
-  const quotes = [
-    "Small steps compound into big wins.",
-    "Done is better than perfect.",
-    "Your future self is watching. Make them proud.",
-    "Consistency beats intensity.",
-  ];
+export async function generateRecommendations(profile, favorites = [], goals = [], opts = {}) {
+  // Remove the full URL, just use the path
+  const { signal, baseURL = "/api/recommendations" } = opts;  // ← Changed here
+  
+  const params = new URLSearchParams();
+  if (profile.name) params.set("name", profile.name);
+  if (profile.major) params.set("major", profile.major);
+  if (profile.location) params.set("location", profile.location);
+  favorites.forEach(f => params.append("favorites", f));
+  goals.forEach(g => params.append("goals", g));
 
-  const selfCare = [
-    "Pause for a 5‑minute walk and 3 deep breaths.",
-    "Hydrate and stretch your neck/shoulders.",
-    "Write one thing you're grateful for today.",
-    "Block 15 minutes for quiet focus.",
-  ];
-
-  const tips = [
-    `Share one authentic update about your journey with someone who roots for you — they’ll love hearing from you.`,
-    `Look up a ${location || "local"} community space or virtual meetup and mark one you might join when you have capacity.`,
-    "Block a 'soft focus' hour this week: light a candle, play music, check in with yourself, and pick one tiny action.",
-    "Write a compassionate note to yourself for tough days; tuck it somewhere visible.",
-  ];
-
-  // Activity -> next steps
-  const nextSteps = favorites.filter(Boolean).flatMap((act) => {
-    const key = act.toLowerCase();
-    if (key.includes("coding") || key.includes("program")) {
-      return [
-        {
-          type: "next",
-          title: "Create a playful coding nook",
-          detail:
-            "Spin up a lightweight project that brings you joy (think: mood tracker, gratitude bot) and celebrate the process, not perfection.",
-          action: "Open a new repo or sandbox and jot down two whimsical ideas you’d enjoy building.",
-        },
-      ];
+  const url = `${baseURL}?${params.toString()}`;
+  
+  console.log("🔍 Calling URL:", url);
+  
+  try {
+    const res = await fetch(url, { method: "GET", signal });
+    
+    console.log("📡 Response status:", res.status);
+    console.log("📋 Content-Type:", res.headers.get("content-type"));
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ Response:", text);
+      throw new Error(`Fetch failed: ${res.status}`);
     }
-    if (key.includes("reading")) {
-      return [
-        {
-          type: "next",
-          title: "Cozy reading ritual",
-          detail: "Pair your favorite drink with 20 mindful minutes of reading and note one feeling or insight that surfaced.",
-          action: "Pick two pieces to explore and block a gentle reading slot this week.",
-        },
-      ];
-    }
-    if (key.includes("gym") || key.includes("workout") || key.includes("run")) {
-      return [
-        {
-          type: "next",
-          title: "Movement that meets you where you are",
-          detail: "Design a flexible movement menu (stretch, walk, dance break) that adapts to low, medium, and high energy days.",
-          action: "List three movement options—one for each energy level—and place them where you’ll see them.",
-        },
-      ];
-    }
-    // default generic step
-    return [
-      {
-        type: "next",
-        title: `Nurture ${act}`,
-        detail: `Spend time with ${act} in a way that feels restorative, then jot how it shifted your mood.`,
-        action: "Schedule a short session and invite a friend or share a reflection afterward.",
-      },
-    ];
-  });
-
-  const goalPlans = goals.filter(Boolean).map((g, i) => ({
-    type: "goal",
-    title: `Goal ${i + 1}`,
-    detail: g,
-    action: "Name one low-pressure first move, celebrate it, and decide how you want to be supported for the next.",
-  }));
-
-  const items = [
-    ...nextSteps,
-    ...goalPlans,
-    { type: "tip", title: "Pro Tip", detail: tips[Math.floor(Math.random() * tips.length)] },
-    { type: "quote", title: "Motivational Quote", detail: quotes[Math.floor(Math.random() * quotes.length)] },
-    { type: "selfcare", title: "Self‑Care", detail: selfCare[Math.floor(Math.random() * selfCare.length)] },
-    { type: "community", title: "Community Chat", detail: "Say hi and share a tiny win today!" },
-  ];
-
-  return items;
+    
+    const data = await res.json();
+    console.log("✅ Got data:", data);
+    return data;
+  } catch (error) {
+    console.error("💥 Error:", error);
+    throw error;
+  }
 }
   
 
@@ -344,6 +294,268 @@ function PreferencesForm({ user, onComplete }) {
         </div>
       </div>
     </motion.form>
+  );
+}
+
+// ----------------------------- Community Chat (demo, local only)
+function CommunityChat() {
+  const [messages, setMessages] = useState(() => JSON.parse(localStorage.getItem(LS_KEYS.chat) || "[]"));
+  const [text, setText] = useState("");
+  useEffect(() => localStorage.setItem(LS_KEYS.chat, JSON.stringify(messages)), [messages]);
+
+  const send = () => {
+    if (!text.trim()) return;
+    setMessages((m) => [
+      ...m,
+      { id: crypto.randomUUID(), text: text.trim(), at: new Date().toISOString() },
+    ]);
+    setText("");
+  };
+
+  return (
+    <div className="flex h-80 flex-col rounded-2xl border border-[#e4dcc4] bg-white/80 p-4 shadow-sm shadow-[#2F4D6A]/5">
+      <div className="mb-2 flex items-center gap-2 text-slate-700"><Users size={18} /><span className="font-semibold">Community — real‑time (demo)</span></div>
+      <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-[#f9f6ec] p-3 text-sm">
+        {messages.length === 0 && (
+          <p className="text-slate-500">No messages yet. Be the first to share a tiny win! 🎉</p>
+        )}
+        {messages.map((m) => (
+          <div key={m.id} className="w-fit max-w-[80%] rounded-xl bg-white px-3 py-2 shadow">
+            <p>{m.text}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">{new Date(m.at).toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+          placeholder="Share a tip, ask a question, or celebrate a win…"
+          className="flex-1 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 outline-none focus:border-slate-400"
+        />
+        <button
+          onClick={send}
+          className="rounded-xl bg-[#2F4D6A] px-4 py-2 text-[#FFFDF6] transition hover:bg-[#375d80]"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------- Dashboard
+// ----------------------------- Dashboard
+function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
+  const { favorites = [], goals = [] } = prefs || {};
+  const [localRecs, setLocalRecs] = useState(recs);
+  const [showGoalsPopup, setShowGoalsPopup] = useState(false);
+  const [editedGoals, setEditedGoals] = useState([]);
+  const [updating, setUpdating] = useState(false);
+  
+  // Debug logging
+  console.log("📊 Dashboard recs:", recs);
+  console.log("📊 Recs length:", recs?.length);
+  if (recs?.[0]) {
+    console.log("📊 First rec:", recs[0]);
+  }
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalRecs(recs);
+  }, [recs]);
+  
+  const toggleCompleted = (index) => {
+    const rec = localRecs[index];
+    
+    // If checking the box (marking as complete), show popup
+    if (!rec.completed) {
+      setEditedGoals([...goals]);
+      setShowGoalsPopup(true);
+    }
+    
+    setLocalRecs(prevRecs => {
+      const updated = [...prevRecs];
+      updated[index] = { ...updated[index], completed: !updated[index].completed };
+      // Optionally save to localStorage
+      mockApi.saveRecommendations(user.id, updated);
+      return updated;
+    });
+  };
+  
+  const saveGoals = async () => {
+    setUpdating(true);
+    try {
+      // Save updated preferences
+      const updatedPrefs = await mockApi.savePreferences(user.id, { favorites, goals: editedGoals });
+      
+      // Generate new recommendations based on updated goals
+      const newRecs = await generateRecommendations(user, favorites, editedGoals);
+      await mockApi.saveRecommendations(user.id, newRecs);
+      
+      // Update parent component state if callback provided
+      if (onUpdatePreferences) {
+        onUpdatePreferences({ prefs: updatedPrefs, recs: newRecs });
+      }
+      
+      setShowGoalsPopup(false);
+    } catch (err) {
+      console.error("Failed to update goals:", err);
+      alert("Failed to update goals. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+  
+  const addGoal = () => {
+    if (editedGoals.length < 3) {
+      setEditedGoals([...editedGoals, ""]);
+    }
+  };
+  
+  const updateGoal = (index, value) => {
+    const updated = [...editedGoals];
+    updated[index] = value;
+    setEditedGoals(updated);
+  };
+  
+  const removeGoal = (index) => {
+    setEditedGoals(editedGoals.filter((_, i) => i !== index));
+  };
+  
+  return (
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-800">Welcome back, {user?.name?.split(" ")[0] || "friend"} 👋</h2>
+          <p className="text-slate-600">We've tailored your dashboard from your interests and goals.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-sm text-slate-600">
+          {favorites.map((f, i) => (
+            <span key={i} className="rounded-full border border-slate-300 px-3 py-1">{f}</span>
+          ))}
+          {goals.map((g, i) => (
+            <span key={i} className="rounded-full border border-[#8FB3BF] bg-[#8FB3BF]/20 px-3 py-1">🎯 {g}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {localRecs.map((r, i) => (
+          <motion.div
+            key={i}
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: i * 0.03 }}
+            className={`rounded-2xl border p-5 shadow-sm backdrop-blur ${
+              r.completed 
+                ? 'border-green-300 bg-green-50/80 shadow-green-200/20' 
+                : 'border-[#e4dcc4] bg-white/80 shadow-[#2F4D6A]/5'
+            }`}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Target size={18} />
+                <h3 className="font-semibold">{r.name}</h3>
+              </div>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={r.completed}
+                  onChange={() => toggleCompleted(i)}
+                  className="h-4 w-4 cursor-pointer accent-green-600"
+                />
+                {r.completed && (
+                  <span className="text-xs text-green-700">Done</span>
+                )}
+              </label>
+            </div>
+            <p className="text-sm text-slate-700">{r.desc}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        <CommunityChat />
+      </div>
+      
+      {/* Goals Edit Popup */}
+      <AnimatePresence>
+        {showGoalsPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowGoalsPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="mx-4 w-full max-w-lg rounded-3xl border border-[#e4dcc4] bg-white p-6 shadow-2xl"
+            >
+              <div className="mb-4 flex items-center gap-2 text-slate-700">
+                <Sparkles size={20} />
+                <h3 className="text-xl font-semibold">Great progress! 🎉</h3>
+              </div>
+              
+              <p className="mb-4 text-sm text-slate-600">
+                You completed a task! Here are your current goals. Would you like to update them?
+              </p>
+              
+              <div className="space-y-3">
+                {editedGoals.map((goal, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      value={goal}
+                      onChange={(e) => updateGoal(i, e.target.value)}
+                      placeholder="Enter a goal"
+                      className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                    <button
+                      onClick={() => removeGoal(i)}
+                      className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      aria-label="Remove goal"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                
+                {editedGoals.length < 3 && (
+                  <button
+                    onClick={addGoal}
+                    className="w-full rounded-xl border-2 border-dashed border-slate-300 py-2 text-sm text-slate-500 transition hover:border-slate-400 hover:text-slate-600"
+                  >
+                    + Add another goal
+                  </button>
+                )}
+              </div>
+              
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => setShowGoalsPopup(false)}
+                  className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:bg-slate-50"
+                >
+                  Keep current goals
+                </button>
+                <button
+                  onClick={saveGoals}
+                  disabled={updating}
+                  className="flex-1 rounded-xl bg-[#2F4D6A] px-4 py-2 text-[#FFFDF6] transition hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {updating ? "Updating..." : "Update goals"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

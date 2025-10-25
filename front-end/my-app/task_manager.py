@@ -16,14 +16,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 def ask_agent(goals):
     """Query the Toolhouse agent with user goals"""
-    agent_id = "de98c4c0-988b-4f31-9476-faf1ebf66e65"
+    agent_id = "de98c4c0-988b-4f31-9476-faf1ebf66e65" 
     url = f"https://agents.toolhouse.ai/{agent_id}"
     
     payload = {"message": f"{goals}"}
     headers = {}
+
+    print("about to passin in the request, ", payload)
     
     try:
         response = requests.post(url, json=payload, headers=headers)
@@ -50,6 +51,7 @@ def parse_agent_response(json_string: str) -> Optional[List[Dict[str, Any]]]:
     """
     try:
         # Parse the JSON string
+        print("string we got is ", json_string)
         cards = json.loads(json_string)
         
         # Validate that it's a list
@@ -65,6 +67,8 @@ def parse_agent_response(json_string: str) -> Optional[List[Dict[str, Any]]]:
                 continue
             
             # Extract fields (agent format is already correct)
+            print(idx, type(card), card)
+
             name = card.get("name", f"Task {idx + 1}")
             desc = card.get("desc", "")
             completed = card.get("completed", False)
@@ -129,38 +133,35 @@ async def get_recommendations_endpoint(
         query_parts.append(f"Interests: {', '.join(favorites)}")
     if goals:
         query_parts.append(f"Goals: {', '.join(goals)}")
-    
     agent_query = ". ".join(query_parts) if query_parts else "Generate personalized recommendations"
     
     # For testing, use mock data that matches agent format
     # REMOVE THIS when ready to use real agent
-    mock_agent_json = json.dumps([
-        {
-            "name": f"Master {major or 'your field'}",
-            "desc": f"Deep dive into {major or 'core'} fundamentals and advanced concepts",
-            "completed": False
-        },
-        {
-            "name": f"Network in {location or 'your area'}",
-            "desc": f"Attend tech meetups and conferences in {location or 'your city'}",
-            "completed": False
-        },
-        {
-            "name": "Apply to 10 companies",
-            "desc": "Submit tailored applications to target companies based on your goals",
-            "completed": False
-        }
-    ])
-    
+    #mock_agent_json = json.dumps([
+    #    {
+    #        "name": f"Master {major or 'your field'}",
+    #        "desc": f"Deep dive into {major or 'core'} fundamentals and advanced concepts",
+    #        "completed": False
+    #    },
+    #    {
+    #        "name": f"Network in {location or 'your area'}",
+    #        "desc": f"Attend tech meetups and conferences in {location or 'your city'}",
+    #        "completed": False
+    #    },
+    #    {
+    #        "name": "Apply to 10 companies",
+    #        "desc": "Submit tailored applications to target companies based on your goals",
+    #        "completed": False
+    #    }
+    #])
+    print("quering agent")
     # UNCOMMENT THIS when ready to use real agent:
-    # agent_response = ask_agent(agent_query)
-    # if not agent_response:
-    #     raise HTTPException(status_code=500, detail="Failed to get response from agent")
-    # cards = parse_agent_response(agent_response)
-    
-    # Using mock data for now
-    cards = parse_agent_response(mock_agent_json)
-    
+    agent_response = ask_agent(agent_query)
+    if not agent_response:
+         raise HTTPException(status_code=500, detail="Failed to get response from agent")
+    cards = parse_agent_response(agent_response)
+    print(type(cards))
+    print(cards)
     if cards is None:
         raise HTTPException(status_code=500, detail="Failed to parse agent response")
     
@@ -186,5 +187,5 @@ async def update_card_endpoint(request: dict):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 

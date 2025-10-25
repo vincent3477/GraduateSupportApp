@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { useCallback } from "react";
+import logoMark from "../assets/logo.svg";
 
 const NavBar = () => {
   const location = useLocation();
@@ -21,9 +22,7 @@ const NavBar = () => {
     <header className="sticky top-0 z-50 border-b border-[#e4dcc4] bg-[rgba(255,253,246,0.92)] backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link to="/" className="inline-flex items-center gap-2 text-slate-800 transition hover:text-[#2F4D6A]">
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#2F4D6A] text-sm font-semibold uppercase tracking-wide text-[#FFFDF6] shadow-sm shadow-[#2F4D6A]/20">
-            GP
-          </span>
+          <img src={logoMark} alt="GradPath logo" className="h-9 w-9 rounded-2xl bg-[#2F4D6A]/10 p-1.5 shadow-sm shadow-[#2F4D6A]/10" />
           <span className="text-lg font-semibold">GradPath</span>
         </Link>
 

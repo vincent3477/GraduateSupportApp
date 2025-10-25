@@ -3,6 +3,8 @@ import Home from "./sections/Home.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import Login from "./pages/Login.jsx";
 import SupportBoard from "./pages/SupportBoard.jsx";
+import CommunityChat from "./pages/CommunityChat.jsx";
+import RoomChat from "./pages/RoomChat.jsx";
 import NavBar from "./components/NavBar.jsx";
 
 const App = () => {
@@ -14,6 +16,8 @@ const App = () => {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/login" element={<Login />} />
         <Route path="/support" element={<SupportBoard />} />
+        <Route path="/community-chat" element={<CommunityChat />} />
+        <Route path="/community-chat/:roomId" element={<RoomChat />} />
       </Routes>
     </div>
   );

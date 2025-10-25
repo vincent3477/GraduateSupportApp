@@ -7,65 +7,7 @@ import {
   Heart,
   Users as UsersIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { LS_KEYS } from "../utils/supportStorage.js";
-
-function CommunityChat() {
-  const [messages, setMessages] = useState(() => JSON.parse(localStorage.getItem(LS_KEYS.chat) || "[]"));
-  const [text, setText] = useState("");
-
-  useEffect(() => localStorage.setItem(LS_KEYS.chat, JSON.stringify(messages)), [messages]);
-
-  const send = () => {
-    if (!text.trim()) return;
-    setMessages((m) => [
-      ...m,
-      { id: crypto.randomUUID(), text: text.trim(), at: new Date().toISOString() },
-    ]);
-    setText("");
-  };
-
-  return (
-    <div className="flex h-80 flex-col rounded-2xl border border-[#e4dcc4] bg-white/80 p-4 shadow-sm shadow-[#2F4D6A]/5">
-      <div className="mb-2 flex items-center gap-2 text-slate-700">
-        <UsersIcon size={18} />
-        <span className="font-semibold">Community check-in (demo)</span>
-      </div>
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-[#f9f6ec] p-3 text-sm">
-        {messages.length === 0 && (
-          <p className="text-slate-500">
-            No messages yet. Drop a feeling, a tiny win, or a reminder someone else might need today. 💛
-          </p>
-        )}
-        {messages.map((m) => (
-          <div key={m.id} className="w-fit max-w-[80%] rounded-xl bg-white px-3 py-2 shadow">
-            <p>{m.text}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">
-              {new Date(m.at).toLocaleString()}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex items-center gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
-          placeholder="Share how you're feeling, a gentle reminder, or a small celebration…"
-          className="flex-1 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 outline-none focus:border-slate-400"
-        />
-        <button
-          onClick={send}
-          className="interactive rounded-xl bg-[#2F4D6A] px-4 py-2 text-[#FFFDF6] transition hover:bg-[#375d80]"
-        >
-         Send
-       </button>
-      </div>
-    </div>
-  );
-}
+import { Link } from "react-router-dom";
 
 const SupportDashboard = ({ user, prefs, recs }) => {
   const { favorites = [], goals = [] } = prefs || {};
@@ -152,8 +94,21 @@ const SupportDashboard = ({ user, prefs, recs }) => {
       ))}
     </div>
 
-      <div className="mt-6">
-        <CommunityChat />
+      <div className="mt-10 rounded-3xl border border-[#e4dcc4] bg-white p-6 shadow-sm shadow-[#2F4D6A]/10">
+        <div className="flex flex-col gap-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <div className="space-y-1">
+            <h3 className="text-xl font-semibold text-slate-900">Ready for real-time community support?</h3>
+            <p className="text-sm text-slate-600">
+              Join the live chat rooms to connect with grads from your college, swap wins, and stay in the loop.
+            </p>
+          </div>
+          <Link
+            to="/community-chat"
+            className="interactive inline-flex items-center justify-center rounded-full bg-[#2F4D6A] px-5 py-3 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
+          >
+            Click here to join a community chat room
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -237,6 +237,7 @@ function AccountForm({ onComplete }) {
 }
 
 // The format from generateRecommendations() function: [{"name": "Master your field", "desc": "Deep dive into fundamentals and advanced concepts", "completed": false}]
+// The "completed" field should be indicated by a checkmark.
 
 function PreferencesForm({ user, onComplete }) {
   const [favorites, setFavorites] = useState([]); // up to 3

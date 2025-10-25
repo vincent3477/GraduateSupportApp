@@ -41,91 +41,45 @@ const mockApi = {
 };
 
 // ----------------------------- Simple recommendation/LLM-ish generator
-function generateRecommendations({ name, major, location }, favorites, goals) {
-  const quotes = [
-    "Small steps compound into big wins.",
-    "Done is better than perfect.",
-    "Your future self is watching. Make them proud.",
-    "Consistency beats intensity.",
-  ];
 
-  const selfCare = [
-    "Pause for a 5‑minute walk and 3 deep breaths.",
-    "Hydrate and stretch your neck/shoulders.",
-    "Write one thing you're grateful for today.",
-    "Block 15 minutes for quiet focus.",
-  ];
 
-  const tips = [
-    `Leverage your ${major || "core"} background to stand out in projects and interviews.`,
-    `Showcase location‑specific impact: find ${location || "local"} meetups and volunteer gigs.`,
-    "Document learning publicly (LinkedIn/Twitter) weekly.",
-    "Batch tasks: job apps, outreach, and learning in focused blocks.",
-  ];
 
-  // Activity -> next steps
-  const nextSteps = favorites.filter(Boolean).flatMap((act) => {
-    const key = act.toLowerCase();
-    if (key.includes("coding") || key.includes("program")) {
-      return [
-        {
-          type: "next",
-          title: "Ship a Mini App",
-          detail:
-            "Build and deploy a 1‑weekend project (e.g., API + tiny frontend). Post a 2‑minute demo.",
-          action: "Create repo + write a README roadmap.",
-        },
-      ];
+export async function generateRecommendations(profile, favorites = [], goals = [], opts = {}) {
+  // Remove the full URL, just use the path
+  const { signal, baseURL = "/api/recommendations" } = opts;  // ← Changed here
+  
+  const params = new URLSearchParams();
+  if (profile.name) params.set("name", profile.name);
+  if (profile.major) params.set("major", profile.major);
+  if (profile.location) params.set("location", profile.location);
+  favorites.forEach(f => params.append("favorites", f));
+  goals.forEach(g => params.append("goals", g));
+
+  const url = `${baseURL}?${params.toString()}`;
+  
+  console.log("🔍 Calling URL:", url);
+  
+  try {
+    const res = await fetch(url, { method: "GET", signal });
+    
+    console.log("📡 Response status:", res.status);
+    console.log("📋 Content-Type:", res.headers.get("content-type"));
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ Response:", text);
+      throw new Error(`Fetch failed: ${res.status}`);
     }
-    if (key.includes("reading")) {
-      return [
-        {
-          type: "next",
-          title: "30‑30 Reading Sprint",
-          detail: "30 minutes/day for 2 weeks. Summarize learnings in a note and share.",
-          action: "Pick 2 books or 6 articles and schedule sessions.",
-        },
-      ];
-    }
-    if (key.includes("gym") || key.includes("workout") || key.includes("run")) {
-      return [
-        {
-          type: "next",
-          title: "Fitness Habit Ladder",
-          detail: "Define a 3‑tier routine (tiny/standard/ambitious) and track for 14 days.",
-          action: "Set alarms and prep gear the night before.",
-        },
-      ];
-    }
-    // default generic step
-    return [
-      {
-        type: "next",
-        title: `Deep‑dive: ${act}`,
-        detail: `Research a community or event near ${location || "you"} to practice ${act}.`,
-        action: "Find 1 meetup and RSVP by Friday.",
-      },
-    ];
-  });
-
-  const goalPlans = goals.filter(Boolean).map((g, i) => ({
-    type: "goal",
-    title: `Goal ${i + 1}`,
-    detail: g,
-    action: "Break into 3 milestones; schedule the first milestone for this week.",
-  }));
-
-  const items = [
-    ...nextSteps,
-    ...goalPlans,
-    { type: "tip", title: "Pro Tip", detail: tips[Math.floor(Math.random() * tips.length)] },
-    { type: "quote", title: "Motivational Quote", detail: quotes[Math.floor(Math.random() * quotes.length)] },
-    { type: "selfcare", title: "Self‑Care", detail: selfCare[Math.floor(Math.random() * selfCare.length)] },
-    { type: "community", title: "Community Chat", detail: "Say hi and share a tiny win today!" },
-  ];
-
-  return items;
+    
+    const data = await res.json();
+    console.log("✅ Got data:", data);
+    return data;
+  } catch (error) {
+    console.error("💥 Error:", error);
+    throw error;
+  }
 }
+  
 
 // ----------------------------- Form helpers
 function TextField({ label, value, onChange, type = "text", placeholder, required }) {
@@ -282,6 +236,8 @@ function AccountForm({ onComplete }) {
   );
 }
 
+// The format from generateRecommendations() function: [{"name": "Master your field", "desc": "Deep dive into fundamentals and advanced concepts", "completed": false}]
+
 function PreferencesForm({ user, onComplete }) {
   const [favorites, setFavorites] = useState([]); // up to 3
   const [goals, setGoals] = useState([]); // up to 3
@@ -295,7 +251,8 @@ function PreferencesForm({ user, onComplete }) {
     try {
       if (favorites.length === 0 || goals.length === 0) throw new Error("Add at least one favorite and one goal.");
       const prefs = await mockApi.savePreferences(user.id, { favorites, goals });
-      const recs = generateRecommendations(user, favorites, goals);
+      const recs = await generateRecommendations(user, favorites, goals)
+      
       await mockApi.saveRecommendations(user.id, recs);
       onComplete({ user, prefs, recs });
     } catch (err) {
@@ -394,6 +351,7 @@ function CommunityChat() {
 }
 
 // ----------------------------- Dashboard
+// ----------------------------- Dashboard
 function Dashboard({ user, prefs, recs }) {
   const { favorites = [], goals = [] } = prefs || {};
   return (
@@ -421,23 +379,25 @@ function Dashboard({ user, prefs, recs }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: i * 0.03 }}
-            className="rounded-2xl border border-[#e4dcc4] bg-white/80 p-5 shadow-sm shadow-[#2F4D6A]/5 backdrop-blur"
+            className={`rounded-2xl border p-5 shadow-sm backdrop-blur ${
+              r.completed 
+                ? 'border-green-300 bg-green-50/80 shadow-green-200/20' 
+                : 'border-[#e4dcc4] bg-white/80 shadow-[#2F4D6A]/5'
+            }`}
           >
-            <div className="mb-2 flex items-center gap-2 text-slate-700">
-              {r.type === "next" && <Sparkles size={18} />}
-              {r.type === "goal" && <Target size={18} />}
-              {r.type === "tip" && <MessageSquareText size={18} />}
-              {r.type === "quote" && <Quote size={18} />}
-              {r.type === "selfcare" && <Heart size={18} />}
-              {r.type === "community" && <Users size={18} />}
-              <h3 className="font-semibold">{r.title}</h3>
-            </div>
-            <p className="text-sm text-slate-700">{r.detail}</p>
-            {r.action && (
-              <div className="mt-3 rounded-xl bg-[#f9f6ec] p-3 text-sm text-slate-600">
-                <span className="font-medium">Next step:</span> {r.action}
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Target size={18} />
+                <h3 className="font-semibold">{r.name}</h3>
               </div>
-            )}
+              {r.completed && (
+                <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
+                  <Check size={14} />
+                  <span>Done</span>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-slate-700">{r.desc}</p>
           </motion.div>
         ))}
       </div>

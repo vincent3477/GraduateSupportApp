@@ -355,6 +355,14 @@ function CommunityChat() {
 // ----------------------------- Dashboard
 function Dashboard({ user, prefs, recs }) {
   const { favorites = [], goals = [] } = prefs || {};
+  
+  // Debug logging
+  console.log("📊 Dashboard recs:", recs);
+  console.log("📊 Recs length:", recs?.length);
+  if (recs?.[0]) {
+    console.log("📊 First rec:", recs[0]);
+  }
+  
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

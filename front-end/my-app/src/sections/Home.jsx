@@ -1,40 +1,40 @@
 import { ArrowRight, CalendarCheck, Compass, GraduationCap, Users } from "lucide-react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const highlights = [
   {
     icon: GraduationCap,
-    title: "Personalized Launch Plan",
+    title: "Whole-Self Support",
     description:
-      "Clarify your goals, surface hidden strengths, and map the next steps that move the needle for your career.",
+      "Name the feelings, wins, and worries of your transition so you can move forward with compassion and clarity.",
   },
   {
     icon: Compass,
-    title: "Guided Milestones",
+    title: "Next-Step Guidance",
     description:
-      "Break the journey into manageable wins with reminders, templates, and gentle nudges when you need them.",
+      "Surface gentle prompts and right-sized actions that keep momentum without overwhelming your energy.",
   },
   {
     icon: Users,
-    title: "Community Support",
+    title: "Circle of Care",
     description:
-      "Meet other grads, swap resources, and share progress in a space designed for accountability without pressure.",
+      "Lean on peers, reflective prompts, and moderated chats built to remind you that you are not doing this alone.",
   },
 ];
 
 const roadmap = [
   {
-    title: "Get grounded",
-    detail: "Capture your interests, values, and constraints so the plan starts with who you are today.",
+    title: "Settle in & share",
+    detail: "Create a profile that captures how you are feeling, what you need, and the pace that feels sustainable.",
   },
   {
-    title: "Experiment & iterate",
-    detail: "Try small, low-risk experiments that build evidence and confidence before big commitments.",
+    title: "Receive gentle nudges",
+    detail: "Get weekly reflections, wellbeing reminders, and achievable next steps tailored to your situation.",
   },
   {
-    title: "Stay in motion",
-    detail: "Track momentum with peers, reflections, and automated check-ins that celebrate every win.",
+    title: "Grow with your people",
+    detail: "Check in with a supportive community that celebrates small wins, normalizes setbacks, and keeps you seen.",
   },
 ];
 
@@ -46,58 +46,49 @@ const Home = () => {
         <div className="h-64 w-[36rem] -rotate-12 bg-gradient-to-br from-[#2F4D6A]/25 via-[#EBAF5F]/20 to-[#8FB3BF]/25 opacity-80" />
       </div>
 
-      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-20 px-6 pb-24 pt-24 lg:px-12">
-        <header className="grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
-          <div className="space-y-6">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#d8d2c0] bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-              <CalendarCheck className="h-4 w-4" />
-              Your next chapter, supported
-            </span>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Build a career launch plan that honors your pace, energy, and ambition.
-            </h1>
-            <p className="max-w-2xl text-lg text-slate-600">
-              GradPath blends structured onboarding with on-demand encouragement so new graduates can make confident,
-              values-aligned moves. Think of it as your accountability partner, strategy coach, and cheer squad,
-              combined.
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-24 px-6 pb-24 pt-24 lg:px-12">
+        <header className="flex min-h-[70vh] flex-col items-center justify-center gap-20 text-center">
+          <div className="max-w-3xl space-y-8 mb-4">
+            <motion.h1
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-4xl font-semibold tracking-tight leading-snug text-slate-900 sm:text-5xl sm:leading-tight"
+            >
+              Feeling lost in the post-grad haze? 
+                < div className="text-xl mt-4">
+                    Find your community with GradPath.
+                </div>
+            </motion.h1>
+            <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              GradPath combines emotional check-ins, community accountability, and bite-sized guidance so you can honor
+              what you are feeling while still making steady moves toward what is next.
             </p>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-5">
               <Link
                 to="/onboarding"
-                className="inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-6 py-3 text-base font-medium text-[#FFFDF6] shadow-lg shadow-[#2F4D6A]/30 transition hover:bg-[#375d80] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F4D6A]/60"
+                className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-6 py-3 text-base font-medium text-[#FFFDF6] shadow-lg shadow-[#2F4D6A]/30 transition hover:bg-[#375d80] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F4D6A]/60"
               >
                 Start onboarding
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm text-slate-500">
-                Takes about 4 minutes · saves you countless hours of uncertainty
-              </span>
             </div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative overflow-hidden rounded-3xl border border-[#e4dcc4] bg-white/80 p-6 shadow-2xl shadow-[#2F4D6A]/10 backdrop-blur"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#2F4D6A]/10 via-white/40 to-[#EBAF5F]/10" />
-            <div className="relative space-y-6">
-              <p className="text-lg font-medium text-slate-900">“GradPath helped me stop guessing.”</p>
-              <p className="text-sm text-slate-600">
-                “Within a week I had a clear plan, real accountability, and a community cheering me on. It turned the
-                post-grad fog into focused experiments.”
-              </p>
-              <div className="flex items-center gap-3 text-sm text-slate-500">
-                <div className="h-10 w-10 rounded-full bg-[#2F4D6A]/15" />
-                <div>
-                  <p className="font-medium text-slate-900">Maya, Product New Grad</p>
-                  <p>First role at a mission-driven startup</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </header>
+
+        <section className="rounded-3xl border border-[#2F4D6A]/10 bg-[#20354a] px-6 py-12 text-center text-white shadow-lg shadow-[#2F4D6A]/20 lg:px-16">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-3xl text-center">
+            Be seen and supported through your 
+            <span className="text-4xl font-bold mx-4">“what now?”</span> moment.
+          </h2>
+          <div className="mt-10 mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10">
+            <img
+              src="https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1600&q=80"
+              alt="GradPath community sharing support"
+              className="h-60 w-full object-cover sm:h-72 lg:h-80"
+            />
+          </div>
+        </section>
 
         <section className="grid gap-8 lg:grid-cols-3">
           {highlights.map(({ icon: Icon, title, description }) => (
@@ -120,8 +111,8 @@ const Home = () => {
               <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2F4D6A]">How it works</p>
               <h2 className="text-3xl font-semibold text-slate-900">A grounded path that adapts with you</h2>
               <p className="text-base text-slate-600">
-                We pair reflection prompts with draft scripts, outreach templates, and self-care check-ins. Every step
-                is lightweight, actionable, and designed for real humans juggling life and possibility.
+                We pair emotional wellbeing prompts with community touchpoints and gentle planning tools. Everything is
+                lightweight, human, and paced so you can breathe while you build.
               </p>
             </div>
             <div className="space-y-6">
@@ -145,14 +136,64 @@ const Home = () => {
           <div className="flex flex-wrap justify-center gap-4">
             <Link
               to="/onboarding"
-              className="inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-6 py-3 text-base font-medium text-[#FFFDF6] shadow-lg shadow-[#2F4D6A]/30 transition hover:bg-[#375d80] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F4D6A]/60"
+              className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-6 py-3 text-base font-medium text-[#FFFDF6] shadow-lg shadow-[#2F4D6A]/30 transition hover:bg-[#375d80] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F4D6A]/60"
             >
               Start onboarding
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <span className="text-sm text-slate-500">No spam. No overwhelm. Just support.</span>
           </div>
         </footer>
+
+        <section
+          id="contact"
+          className="rounded-3xl border border-[#e4dcc4] bg-white p-8 shadow-lg shadow-[#2F4D6A]/15 lg:p-12"
+        >
+          <h2 className="text-3xl font-semibold text-slate-900 text-center">Let’s stay in touch</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-base text-slate-600">
+            Reach out if you have questions, want to collaborate, or need an extra dose of support.
+          </p>
+          <form className="mx-auto mt-10 max-w-3xl space-y-6 rounded-2xl border border-[#e4dcc4] bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-2 text-left">
+              <label htmlFor="contact-name" className="text-sm font-medium text-slate-700">
+                Name
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
+                placeholder="Your name"
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-left">
+              <label htmlFor="contact-email" className="text-sm font-medium text-slate-700">
+                Email
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
+                placeholder="you@email.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-left">
+              <label htmlFor="contact-message" className="text-sm font-medium text-slate-700">
+                Message
+              </label>
+              <textarea
+                id="contact-message"
+                rows="4"
+                className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
+                placeholder="Share what you need, and we'll get back within 24 hours."
+              />
+            </div>
+            <button
+              type="button"
+              className="interactive w-full rounded-full bg-[#2F4D6A] px-6 py-3 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
+            >
+              Send message
+            </button>
+          </form>
+        </section>
       </main>
     </div>
   );

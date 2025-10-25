@@ -1,14 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Rocket, Quote, MessageSquareText, Users, Target, Heart, Sparkles } from "lucide-react";
-
-// ----------------------------- Utility: localStorage keys
-const LS_KEYS = {
-  user: "ng_user_profile",
-  prefs: "ng_user_prefs",
-  recs: "ng_user_recs",
-  chat: "ng_demo_chat",
-};
+import { Check, ChevronRight, Rocket, Target, Heart, Sparkles } from "lucide-react";
+import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
+import SupportDashboard from "../components/SupportDashboard.jsx";
 
 // ----------------------------- Mock API
 const mockApi = {
@@ -30,54 +24,94 @@ const mockApi = {
     localStorage.setItem(LS_KEYS.recs, JSON.stringify(payload));
     return payload;
   },
-  loadAll() {
-    return {
-      user: JSON.parse(localStorage.getItem(LS_KEYS.user) || "null"),
-      prefs: JSON.parse(localStorage.getItem(LS_KEYS.prefs) || "null"),
-      recs: JSON.parse(localStorage.getItem(LS_KEYS.recs) || "null"),
-      chat: JSON.parse(localStorage.getItem(LS_KEYS.chat) || "[]"),
-    };
-  },
+  loadAll: loadSupportData,
 };
 
 // ----------------------------- Simple recommendation/LLM-ish generator
+function generateRecommendations({ name, major, location }, favorites, goals) {
+  const quotes = [
+    "Small steps compound into big wins.",
+    "Done is better than perfect.",
+    "Your future self is watching. Make them proud.",
+    "Consistency beats intensity.",
+  ];
 
+  const selfCare = [
+    "Pause for a 5‑minute walk and 3 deep breaths.",
+    "Hydrate and stretch your neck/shoulders.",
+    "Write one thing you're grateful for today.",
+    "Block 15 minutes for quiet focus.",
+  ];
 
+  const tips = [
+    `Share one authentic update about your journey with someone who roots for you — they’ll love hearing from you.`,
+    `Look up a ${location || "local"} community space or virtual meetup and mark one you might join when you have capacity.`,
+    "Block a 'soft focus' hour this week: light a candle, play music, check in with yourself, and pick one tiny action.",
+    "Write a compassionate note to yourself for tough days; tuck it somewhere visible.",
+  ];
 
-export async function generateRecommendations(profile, favorites = [], goals = [], opts = {}) {
-  // Remove the full URL, just use the path
-  const { signal, baseURL = "/api/recommendations" } = opts;  // ← Changed here
-  
-  const params = new URLSearchParams();
-  if (profile.name) params.set("name", profile.name);
-  if (profile.major) params.set("major", profile.major);
-  if (profile.location) params.set("location", profile.location);
-  favorites.forEach(f => params.append("favorites", f));
-  goals.forEach(g => params.append("goals", g));
-
-  const url = `${baseURL}?${params.toString()}`;
-  
-  console.log("🔍 Calling URL:", url);
-  
-  try {
-    const res = await fetch(url, { method: "GET", signal });
-    
-    console.log("📡 Response status:", res.status);
-    console.log("📋 Content-Type:", res.headers.get("content-type"));
-    
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("❌ Response:", text);
-      throw new Error(`Fetch failed: ${res.status}`);
+  // Activity -> next steps
+  const nextSteps = favorites.filter(Boolean).flatMap((act) => {
+    const key = act.toLowerCase();
+    if (key.includes("coding") || key.includes("program")) {
+      return [
+        {
+          type: "next",
+          title: "Create a playful coding nook",
+          detail:
+            "Spin up a lightweight project that brings you joy (think: mood tracker, gratitude bot) and celebrate the process, not perfection.",
+          action: "Open a new repo or sandbox and jot down two whimsical ideas you’d enjoy building.",
+        },
+      ];
     }
-    
-    const data = await res.json();
-    console.log("✅ Got data:", data);
-    return data;
-  } catch (error) {
-    console.error("💥 Error:", error);
-    throw error;
-  }
+    if (key.includes("reading")) {
+      return [
+        {
+          type: "next",
+          title: "Cozy reading ritual",
+          detail: "Pair your favorite drink with 20 mindful minutes of reading and note one feeling or insight that surfaced.",
+          action: "Pick two pieces to explore and block a gentle reading slot this week.",
+        },
+      ];
+    }
+    if (key.includes("gym") || key.includes("workout") || key.includes("run")) {
+      return [
+        {
+          type: "next",
+          title: "Movement that meets you where you are",
+          detail: "Design a flexible movement menu (stretch, walk, dance break) that adapts to low, medium, and high energy days.",
+          action: "List three movement options—one for each energy level—and place them where you’ll see them.",
+        },
+      ];
+    }
+    // default generic step
+    return [
+      {
+        type: "next",
+        title: `Nurture ${act}`,
+        detail: `Spend time with ${act} in a way that feels restorative, then jot how it shifted your mood.`,
+        action: "Schedule a short session and invite a friend or share a reflection afterward.",
+      },
+    ];
+  });
+
+  const goalPlans = goals.filter(Boolean).map((g, i) => ({
+    type: "goal",
+    title: `Goal ${i + 1}`,
+    detail: g,
+    action: "Name one low-pressure first move, celebrate it, and decide how you want to be supported for the next.",
+  }));
+
+  const items = [
+    ...nextSteps,
+    ...goalPlans,
+    { type: "tip", title: "Pro Tip", detail: tips[Math.floor(Math.random() * tips.length)] },
+    { type: "quote", title: "Motivational Quote", detail: quotes[Math.floor(Math.random() * quotes.length)] },
+    { type: "selfcare", title: "Self‑Care", detail: selfCare[Math.floor(Math.random() * selfCare.length)] },
+    { type: "community", title: "Community Chat", detail: "Say hi and share a tiny win today!" },
+  ];
+
+  return items;
 }
   
 
@@ -141,7 +175,7 @@ function ChipsInput({ label, values, setValues, max = 3, placeholder }) {
         <button
           onClick={add}
           disabled={!canAdd}
-          className="rounded-xl bg-[#2F4D6A] px-3 py-1 text-sm text-[#FFFDF6] transition hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2F4D6A]"
+          className="interactive rounded-xl bg-[#2F4D6A] px-3 py-1 text-sm text-[#FFFDF6] transition hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2F4D6A]"
         >
           Add
         </button>
@@ -153,7 +187,7 @@ function ChipsInput({ label, values, setValues, max = 3, placeholder }) {
 
 // ----------------------------- Stepper UI
 function Stepper({ step }) {
-  const steps = ["Create Account", "Your Interests & Goals", "Your Dashboard"];
+  const steps = ["Create Your Space", "Share What You Need", "Your Support Board"];
   return (
     <div className="mx-auto mb-6 flex w-full max-w-3xl items-center justify-between">
       {steps.map((s, i) => {
@@ -212,22 +246,25 @@ function AccountForm({ onComplete }) {
       <div className="rounded-3xl border border-[#e4dcc4] bg-white/80 p-6 shadow-sm backdrop-blur">
         <div className="mb-4 flex items-center gap-2 text-slate-700">
           <Rocket className="inline" size={20} />
-          <h2 className="text-xl font-semibold">Create your account</h2>
+          <h2 className="text-xl font-semibold">Create your support profile</h2>
         </div>
+        <p className="mb-6 text-sm text-slate-600">
+          This helps us greet you by name, send encouragement to the right spot, and weave you into the GradPath circle.
+        </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField label="Full Name" value={name} onChange={setName} placeholder="Alex Kim" required />
           <TextField label="Email" value={email} onChange={setEmail} placeholder="alex@email.com" required type="email" />
           <TextField label="Birthday" value={birthday} onChange={setBirthday} placeholder="YYYY-MM-DD" type="date" />
-          <TextField label="Major" value={major} onChange={setMajor} placeholder="Computer Science" />
-          <TextField label="Location" value={location} onChange={setLocation} placeholder="San Diego, CA" />
+          <TextField label="Focus or field (optional)" value={major} onChange={setMajor} placeholder="e.g., Product design" />
+          <TextField label="Where you're based" value={location} onChange={setLocation} placeholder="e.g., San Diego, CA" />
         </div>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         <div className="mt-6 flex justify-end">
           <button
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
+            className="interactive inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
             disabled={loading}
           >
-            Continue <ChevronRight size={18} />
+            Save & continue <ChevronRight size={18} />
           </button>
         </div>
       </div>
@@ -268,153 +305,45 @@ function PreferencesForm({ user, onComplete }) {
       <div className="rounded-3xl border border-[#e4dcc4] bg-white/80 p-6 shadow-sm backdrop-blur">
         <div className="mb-4 flex items-center gap-2 text-slate-700">
           <Target className="inline" size={20} />
-          <h2 className="text-xl font-semibold">Your interests & goals</h2>
+          <h2 className="text-xl font-semibold">Share what lifts and worries you</h2>
         </div>
+        <p className="mb-6 text-sm text-slate-600">
+          Tell us what’s keeping you grounded and where you could use some community care. We’ll reflect it back as
+          gentle prompts, affirmations, and doable actions.
+        </p>
         <div className="space-y-6">
           <ChipsInput
-            label="Top 3 favorite things to do in your free time"
+            label="What restores or energizes you right now?"
             values={favorites}
             setValues={setFavorites}
-            placeholder="e.g., Coding side projects, Reading sci‑fi, Gym"
+            placeholder="e.g., Morning walks, journaling, co-working with friends"
             max={3}
           />
           <ChipsInput
-            label="Top 3 goals you want to achieve"
+            label="What support or progress would feel meaningful next?"
             values={goals}
             setValues={setGoals}
-            placeholder="e.g., Land a SWE role, Improve DSA, Publish a blog"
+            placeholder="e.g., Stay consistent with job search, find community, set healthier boundaries"
             max={3}
           />
         </div>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        <div className="mt-6 flex justify-between text-sm text-slate-600">
+        <div className="mt-6 flex flex-col gap-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p><span className="font-semibold">Why we ask:</span> We personalize your dashboard, match communities, and plan next steps.</p>
+            <p>
+              <span className="font-semibold">Why we ask:</span> Knowing your needs lets us suggest caring check-ins,
+              community spaces, and next steps that truly fit.
+            </p>
           </div>
           <button
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
+            className="interactive inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
             disabled={loading}
           >
-            Build my dashboard <ChevronRight size={18} />
+            Show my support board <ChevronRight size={18} />
           </button>
         </div>
       </div>
     </motion.form>
-  );
-}
-
-// ----------------------------- Community Chat (demo, local only)
-function CommunityChat() {
-  const [messages, setMessages] = useState(() => JSON.parse(localStorage.getItem(LS_KEYS.chat) || "[]"));
-  const [text, setText] = useState("");
-  useEffect(() => localStorage.setItem(LS_KEYS.chat, JSON.stringify(messages)), [messages]);
-
-  const send = () => {
-    if (!text.trim()) return;
-    setMessages((m) => [
-      ...m,
-      { id: crypto.randomUUID(), text: text.trim(), at: new Date().toISOString() },
-    ]);
-    setText("");
-  };
-
-  return (
-    <div className="flex h-80 flex-col rounded-2xl border border-[#e4dcc4] bg-white/80 p-4 shadow-sm shadow-[#2F4D6A]/5">
-      <div className="mb-2 flex items-center gap-2 text-slate-700"><Users size={18} /><span className="font-semibold">Community — real‑time (demo)</span></div>
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-[#f9f6ec] p-3 text-sm">
-        {messages.length === 0 && (
-          <p className="text-slate-500">No messages yet. Be the first to share a tiny win! 🎉</p>
-        )}
-        {messages.map((m) => (
-          <div key={m.id} className="w-fit max-w-[80%] rounded-xl bg-white px-3 py-2 shadow">
-            <p>{m.text}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">{new Date(m.at).toLocaleString()}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex items-center gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
-          placeholder="Share a tip, ask a question, or celebrate a win…"
-          className="flex-1 rounded-xl border border-slate-300 bg-white/70 px-3 py-2 outline-none focus:border-slate-400"
-        />
-        <button
-          onClick={send}
-          className="rounded-xl bg-[#2F4D6A] px-4 py-2 text-[#FFFDF6] transition hover:bg-[#375d80]"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ----------------------------- Dashboard
-// ----------------------------- Dashboard
-function Dashboard({ user, prefs, recs }) {
-  const { favorites = [], goals = [] } = prefs || {};
-  
-  // Debug logging
-  console.log("📊 Dashboard recs:", recs);
-  console.log("📊 Recs length:", recs?.length);
-  if (recs?.[0]) {
-    console.log("📊 First rec:", recs[0]);
-  }
-  
-  return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-800">Welcome back, {user?.name?.split(" ")[0] || "friend"} 👋</h2>
-          <p className="text-slate-600">We've tailored your dashboard from your interests and goals.</p>
-        </div>
-        <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-          {favorites.map((f, i) => (
-            <span key={i} className="rounded-full border border-slate-300 px-3 py-1">{f}</span>
-          ))}
-          {goals.map((g, i) => (
-            <span key={i} className="rounded-full border border-[#8FB3BF] bg-[#8FB3BF]/20 px-3 py-1">🎯 {g}</span>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {recs.map((r, i) => (
-          <motion.div
-            key={i}
-            layout
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: i * 0.03 }}
-            className={`rounded-2xl border p-5 shadow-sm backdrop-blur ${
-              r.completed 
-                ? 'border-green-300 bg-green-50/80 shadow-green-200/20' 
-                : 'border-[#e4dcc4] bg-white/80 shadow-[#2F4D6A]/5'
-            }`}
-          >
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Target size={18} />
-                <h3 className="font-semibold">{r.name}</h3>
-              </div>
-              {r.completed && (
-                <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
-                  <Check size={14} />
-                  <span>Done</span>
-                </div>
-              )}
-            </div>
-            <p className="text-sm text-slate-700">{r.desc}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        <CommunityChat />
-      </div>
-    </div>
   );
 }
 
@@ -436,12 +365,12 @@ export default function NewGradOnboarding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-[#f6efdc] to-[#e2edfb] px-4 py-10">
-      <header className="mx-auto mb-8 flex max-w-6xl items-center justify-between">
+      <header className="mx-auto mb-8 flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2F4D6A] text-[#FFFDF6]">NG</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2F4D6A] text-[#FFFDF6]">GP</div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">NewGradSupport</h1>
-            <p className="text-xs text-slate-500">Personalized path to your next step</p>
+            <h1 className="text-xl font-bold text-slate-900">GradPath Support Circle</h1>
+            <p className="text-xs text-slate-500">A gentle space to name feelings, gather care, and plan soft next steps</p>
           </div>
         </div>
         {step === 3 && (
@@ -455,9 +384,9 @@ export default function NewGradOnboarding() {
               setRecs([]);
               setStep(1);
             }}
-            className="rounded-xl border border-[#ded6c0] bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-[#f7f2e4]"
+            className="interactive self-start rounded-xl border border-[#ded6c0] bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-[#f7f2e4]"
           >
-            Reset Demo
+            Clear my story (demo reset)
           </button>
         )}
       </header>
@@ -491,14 +420,14 @@ export default function NewGradOnboarding() {
 
           {step === 3 && user && (
             <motion.div key="step3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <Dashboard user={user} prefs={prefs} recs={recs} />
+              <SupportDashboard user={user} prefs={prefs} recs={recs} />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
       <footer className="mx-auto mt-12 max-w-6xl text-center text-xs text-slate-500">
-        Built with ❤️ for new grads. This is a local demo — wire to your backend for production.
+        Built with ❤️ to remind new grads they are never navigating the next chapter alone. (Demo only — connect your backend to go live.)
       </footer>
     </div>
   );

@@ -187,7 +187,7 @@ function ChipsInput({ label, values, setValues, max = 3, placeholder }) {
         <button
           onClick={add}
           disabled={!canAdd}
-          className="rounded-xl bg-slate-900 px-3 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-xl bg-[#2F4D6A] px-3 py-1 text-sm text-[#FFFDF6] transition hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2F4D6A]"
         >
           Add
         </button>
@@ -211,16 +211,16 @@ function Stepper({ step }) {
             <div
               className={`flex items-center gap-2 rounded-full px-3 py-1 text-sm ${
                 active
-                  ? "bg-slate-900 text-white"
+                  ? "bg-[#2F4D6A] text-[#FFFDF6]"
                   : completed
-                  ? "bg-green-600 text-white"
-                  : "bg-slate-200 text-slate-700"
+                  ? "bg-[#8FB3BF] text-[#1f3a3f]"
+                  : "bg-[#f4efe2] text-slate-600"
               }`}
             >
               {completed ? <Check size={16} /> : <span className="font-semibold">{idx}</span>}
               <span className="hidden sm:block">{s}</span>
             </div>
-            {i < steps.length - 1 && <div className="mx-2 h-px flex-1 bg-slate-200" />}
+            {i < steps.length - 1 && <div className="mx-2 h-px flex-1 bg-[#eadfca]" />}
           </div>
         );
       })}
@@ -255,7 +255,7 @@ function AccountForm({ onComplete }) {
 
   return (
     <motion.form layout onSubmit={submit} className="mx-auto max-w-xl space-y-4">
-      <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+      <div className="rounded-3xl border border-[#e4dcc4] bg-white/80 p-6 shadow-sm backdrop-blur">
         <div className="mb-4 flex items-center gap-2 text-slate-700">
           <Rocket className="inline" size={20} />
           <h2 className="text-xl font-semibold">Create your account</h2>
@@ -270,7 +270,7 @@ function AccountForm({ onComplete }) {
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         <div className="mt-6 flex justify-end">
           <button
-            className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-2 text-white shadow hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
             disabled={loading}
           >
             Continue <ChevronRight size={18} />
@@ -307,7 +307,7 @@ function PreferencesForm({ user, onComplete }) {
 
   return (
     <motion.form layout onSubmit={submit} className="mx-auto max-w-2xl space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+      <div className="rounded-3xl border border-[#e4dcc4] bg-white/80 p-6 shadow-sm backdrop-blur">
         <div className="mb-4 flex items-center gap-2 text-slate-700">
           <Target className="inline" size={20} />
           <h2 className="text-xl font-semibold">Your interests & goals</h2>
@@ -334,7 +334,7 @@ function PreferencesForm({ user, onComplete }) {
             <p><span className="font-semibold">Why we ask:</span> We personalize your dashboard, match communities, and plan next steps.</p>
           </div>
           <button
-            className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-2 text-white shadow hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#2F4D6A] px-5 py-2 text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 hover:bg-[#375d80] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#2F4D6A]"
             disabled={loading}
           >
             Build my dashboard <ChevronRight size={18} />
@@ -361,9 +361,9 @@ function CommunityChat() {
   };
 
   return (
-    <div className="flex h-80 flex-col rounded-2xl border border-slate-200 bg-white/80 p-4">
+    <div className="flex h-80 flex-col rounded-2xl border border-[#e4dcc4] bg-white/80 p-4 shadow-sm shadow-[#2F4D6A]/5">
       <div className="mb-2 flex items-center gap-2 text-slate-700"><Users size={18} /><span className="font-semibold">Community — real‑time (demo)</span></div>
-      <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3 text-sm">
+      <div className="flex-1 space-y-2 overflow-y-auto rounded-xl bg-[#f9f6ec] p-3 text-sm">
         {messages.length === 0 && (
           <p className="text-slate-500">No messages yet. Be the first to share a tiny win! 🎉</p>
         )}
@@ -384,8 +384,10 @@ function CommunityChat() {
         />
         <button
           onClick={send}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-white hover:opacity-95"
-        >Send</button>
+          className="rounded-xl bg-[#2F4D6A] px-4 py-2 text-[#FFFDF6] transition hover:bg-[#375d80]"
+        >
+          Send
+        </button>
       </div>
     </div>
   );
@@ -406,7 +408,7 @@ function Dashboard({ user, prefs, recs }) {
             <span key={i} className="rounded-full border border-slate-300 px-3 py-1">{f}</span>
           ))}
           {goals.map((g, i) => (
-            <span key={i} className="rounded-full border border-indigo-300 bg-indigo-50 px-3 py-1">🎯 {g}</span>
+            <span key={i} className="rounded-full border border-[#8FB3BF] bg-[#8FB3BF]/20 px-3 py-1">🎯 {g}</span>
           ))}
         </div>
       </div>
@@ -419,7 +421,7 @@ function Dashboard({ user, prefs, recs }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: i * 0.03 }}
-            className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm"
+            className="rounded-2xl border border-[#e4dcc4] bg-white/80 p-5 shadow-sm shadow-[#2F4D6A]/5 backdrop-blur"
           >
             <div className="mb-2 flex items-center gap-2 text-slate-700">
               {r.type === "next" && <Sparkles size={18} />}
@@ -432,7 +434,7 @@ function Dashboard({ user, prefs, recs }) {
             </div>
             <p className="text-sm text-slate-700">{r.detail}</p>
             {r.action && (
-              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              <div className="mt-3 rounded-xl bg-[#f9f6ec] p-3 text-sm text-slate-600">
                 <span className="font-medium">Next step:</span> {r.action}
               </div>
             )}
@@ -464,10 +466,10 @@ export default function NewGradOnboarding() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-[#f6efdc] to-[#e2edfb] px-4 py-10">
       <header className="mx-auto mb-8 flex max-w-6xl items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white">NG</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2F4D6A] text-[#FFFDF6]">NG</div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">NewGradSupport</h1>
             <p className="text-xs text-slate-500">Personalized path to your next step</p>
@@ -484,7 +486,7 @@ export default function NewGradOnboarding() {
               setRecs([]);
               setStep(1);
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-[#ded6c0] bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-[#f7f2e4]"
           >
             Reset Demo
           </button>

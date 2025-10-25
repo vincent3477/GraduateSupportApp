@@ -1,0 +1,10 @@
+# Core ML/AI Dependencies
+sentence-transformers>=5.1.0  # For generating user embeddings (7ms per user)
+chromadb>=0.4.0               # Vector database for similarity search (requires Python 3.12)
+torch>=2.9.0                  # Required by sentence-transformers
+numpy>=1.22.0,<2.0.0          # Numerical operations (ChromaDB requires <2.0)
+
+# Note: This project requires Python 3.12 due to ChromaDB compatibility
+# Python 3.14 is not yet supported by the ML/data ecosystem
+
+

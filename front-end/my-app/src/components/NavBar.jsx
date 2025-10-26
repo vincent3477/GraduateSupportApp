@@ -1,15 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import { Sparkles, LogOut } from "lucide-react";
-import { useCallback } from "react";
-=======
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
->>>>>>> df3b948 (added new features)
 import logoMark from "../assets/logo.svg";
 import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
 
-const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
+const NavBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(() => loadSupportData().user);
@@ -25,23 +20,6 @@ const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
     }
   }, [location.pathname, navigate]);
 
-<<<<<<< HEAD
-  const handleSignOut = useCallback(async() => {
-    localStorage.removeItem('authToken');
-    try {
-      await fetch('/api/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-    setIsAuthenticated(false);
-    navigate('/')
-  },[setIsAuthenticated, navigate]);
-=======
   useEffect(() => {
     const syncProfile = () => {
       const { user } = loadSupportData();
@@ -78,13 +56,16 @@ const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
     : displayName
     ? displayName[0].toUpperCase()
     : "G";
->>>>>>> df3b948 (added new features)
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#e4dcc4] bg-[rgba(255,253,246,0.92)] backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link to="/" className="inline-flex items-center gap-2 text-slate-800 transition hover:text-[#2F4D6A]">
-          <img src={logoMark} alt="GradPath logo" className="h-9 w-9 rounded-2xl bg-[#2F4D6A]/10 p-1.5 shadow-sm shadow-[#2F4D6A]/10" />
+          <img
+            src={logoMark}
+            alt="GradPath logo"
+            className="h-9 w-9 rounded-2xl bg-[#2F4D6A]/10 p-1.5 shadow-sm shadow-[#2F4D6A]/10"
+          />
           <span className="text-lg font-semibold">GradPath</span>
         </Link>
 
@@ -110,37 +91,6 @@ const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
           </button>
         </nav>
 
-<<<<<<< HEAD
-        <div className="flex items-center gap-3 text-sm font-semibold">
-          {isAuthenticated ? (
-            // Signed in - show sign out
-            <button
-              onClick={handleSignOut}
-              className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          ) : (
-            // Not signed in - show login and signup
-            <>
-              <Link
-                to="/login"
-                className="interactive rounded-full border border-transparent px-4 py-2 text-slate-600 transition hover:text-[#2F4D6A]"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
-              >
-                <Sparkles className="h-4 w-4" />
-                Sign up
-              </Link>
-            </>
-          )}
-        </div>
-=======
         {profile ? (
           <Link
             to="/support"
@@ -177,7 +127,6 @@ const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
             </Link>
           </div>
         )}
->>>>>>> df3b948 (added new features)
       </div>
     </header>
   );

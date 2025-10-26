@@ -1,37 +1,8 @@
+{
+  "rewrites": [
     {
-      "builds": [
-        {
-          "src": "front-end/my-app/package.json",
-          "use": "@vercel/static-build",
-          "config": {
-            "distDir": "front-end/my-app/src" 
-          }
-        },
-        {
-          "src": "backend/app.py",
-          "use": "@vercel/python"
-        }
-      ],
-      "routes": [
-        {
-          "src": "/(.*)",
-          "dest": "/backend/app.py"
-        },
-        {
-          "src": "/(.*)",
-          "dest": "/front-end/my-app/$1"
-        }
-      ],
-      
-    "rewrites": [
-    {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/backend/app.py"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/front-end/my-app/index.html"
     }
   ]
 }
-    

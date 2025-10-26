@@ -741,7 +741,7 @@ export default function NewGradOnboarding() {
       </main>
 
       <footer className="mx-auto mt-12 max-w-6xl text-center text-xs text-slate-500">
-        Team 206: Built with ❤️ to remind new grads they are never navigating the next chapter alone. 
+        Built with ❤️ to remind new grads they are never navigating the next chapter alone. 
       </footer>
     </div>
   );

@@ -91,7 +91,7 @@ const NavBar = () => {
             alt="GradPath logo"
             className="h-9 w-9 rounded-2xl bg-[#2F4D6A]/10 p-1.5 shadow-sm shadow-[#2F4D6A]/10"
           />
-          <span className="text-lg font-semibold">GradPath</span>
+          <span className="text-lg font-bold mx-4">GradPath</span>
         </Link>
 
         <nav className="flex items-center gap-3 text-sm font-medium text-slate-600">

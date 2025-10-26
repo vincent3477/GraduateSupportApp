@@ -136,7 +136,7 @@ const SupportDashboard = ({ user, prefs, recs }) => {
             Join the live chat rooms to connect with grads from your college, swap wins, and stay in the loop.
           </p>
           <div className="mt-auto inline-flex items-center justify-between rounded-2xl bg-[#2F4D6A] px-4 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition group-hover:bg-[#375d80]">
-            <span>Enter rooms</span>
+            <span>Enter Community Chatrooms</span>
             <span
               aria-hidden="true"
               className="ml-3 flex h-9 w-9 items-center justify-center rounded-full border border-[#FFFDF6]/70 text-base transition group-hover:border-transparent group-hover:bg-[#FFFDF6] group-hover:text-[#2F4D6A]"
@@ -155,10 +155,10 @@ const SupportDashboard = ({ user, prefs, recs }) => {
           </div>
           <h3 className="text-xl font-semibold text-slate-900">Continue your one-on-one momentum</h3>
           <p className="text-sm text-slate-600">
-            Step into a private space curated by the profile matching prototype. Ask for advice, and co-design your next move together.
+            Ask for advice, and co-design your next move together.
           </p>
           <div className="mt-auto inline-flex items-center justify-between rounded-2xl bg-[#2F4D6A] px-4 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition group-hover:bg-[#375d80]">
-            <span>Chat with your peer</span>
+            <span>Chat with Your Peer</span>
             <span
               aria-hidden="true"
               className="ml-3 flex h-9 w-9 items-center justify-center rounded-full border border-[#FFFDF6]/70 text-base transition group-hover:border-transparent group-hover:bg-[#FFFDF6] group-hover:text-[#2F4D6A]"

@@ -4,7 +4,7 @@
           "src": "front-end/my-app/package.json",
           "use": "@vercel/static-build",
           "config": {
-            "distDir": "frontend/build" 
+            "distDir": "front-end/my-app/src" 
           }
         },
         {
@@ -25,8 +25,12 @@
       
     "rewrites": [
     {
-      "source": "/",
-      "destination": "/front-end/my-app/src/Home.jsx"
+      "source": "/api/(.*)",
+      "destination": "/backend/app.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/front-end/my-app/index.html"
     }
   ]
 }

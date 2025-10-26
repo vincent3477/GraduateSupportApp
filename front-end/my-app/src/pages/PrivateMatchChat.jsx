@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock, MapPin, MessageCircleHeart, Sparkles } from "lucide-react";
-import moment from "moment";
 import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
 import PageBackButton from "../components/PageBackButton.jsx";
+
+const subtractTime = (amount, unit) => {
+  const date = new Date();
+  if (unit === 'hours') {
+    date.setHours(date.getHours() - amount);
+  } else if (unit === 'minutes') {
+    date.setMinutes(date.getMinutes() - amount);
+  }
+  return date;
+};
+
+
+
+const formatTime = (date) => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes < 10 ? '0' + minutes : minutes;
+  return `${displayHours}:${displayMinutes} ${ampm}`;
+};
+
 
 const createId = () =>
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -24,6 +45,7 @@ const quickPrompts = [
   "What would you focus on if you were in my shoes next?"
 ];
 
+// Then update the normalizeMessages function:
 const normalizeMessages = (list) => {
   if (!Array.isArray(list)) return null;
   return list
@@ -37,9 +59,10 @@ const normalizeMessages = (list) => {
           ? "partner"
           : "you",
       text: entry.text,
-      timestamp: entry.timestamp || entry.time || moment().format("h:mm a")
+      timestamp: entry.timestamp || entry.time || formatTime(new Date()) // Changed
     }));
 };
+
 
 const PrivateMatchChat = () => {
   const supportData = useMemo(() => loadSupportData(), []);
@@ -68,32 +91,33 @@ const PrivateMatchChat = () => {
   };
   const partnerFirstName = matchedPeer.name?.split(" ")[0] || "Partner";
 
-  const initialMessages = useMemo(() => {
-    const saved = normalizeMessages(supportData.chat);
-    if (saved && saved.length) {
-      return saved;
+// Update the initialMessages useMemo:
+const initialMessages = useMemo(() => {
+  const saved = normalizeMessages(supportData.chat);
+  if (saved && saved.length) {
+    return saved;
+  }
+  return [
+    {
+      id: createId(),
+      sender: "partner",
+      text: `Hey ${firstName}! The matching prototype paired us because we share a focus on thoughtful pivots. Ready when you are.`,
+      timestamp: formatTime(subtractTime(2, 'hours')) // Changed
+    },
+    {
+      id: createId(),
+      sender: "you",
+      text: "Hi Alex! Thanks for reaching out — would love to keep you in the loop as I test my narrative for product roles.",
+      timestamp: formatTime(subtractTime(1, 'hours')) // Changed
+    },
+    {
+      id: createId(),
+      sender: "partner",
+      text: "Amazing. Drop a note anytime you want feedback or a pep talk. I'll keep an eye on your updates here.",
+      timestamp: formatTime(subtractTime(58, 'minutes')) // Changed
     }
-    return [
-      {
-        id: createId(),
-        sender: "partner",
-        text: `Hey ${firstName}! The matching prototype paired us because we share a focus on thoughtful pivots. Ready when you are.`,
-        timestamp: moment().subtract(2, "hours").format("h:mm a")
-      },
-      {
-        id: createId(),
-        sender: "you",
-        text: "Hi Alex! Thanks for reaching out — would love to keep you in the loop as I test my narrative for product roles.",
-        timestamp: moment().subtract(1, "hours").format("h:mm a")
-      },
-      {
-        id: createId(),
-        sender: "partner",
-        text: "Amazing. Drop a note anytime you want feedback or a pep talk. I’ll keep an eye on your updates here.",
-        timestamp: moment().subtract(58, "minutes").format("h:mm a")
-      }
-    ];
-  }, [supportData.chat, firstName]);
+  ];
+}, [supportData.chat, firstName]);
 
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
@@ -126,36 +150,36 @@ const PrivateMatchChat = () => {
   };
 
   const handleSend = (event) => {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
+  event.preventDefault();
+  const text = draft.trim();
+  if (!text) return;
 
-    const outgoing = {
-      id: createId(),
-      sender: "you",
-      text,
-      timestamp: moment().format("h:mm a")
-    };
-
-    setMessages((prev) => [...prev, outgoing]);
-    setDraft("");
-
-    setIsTyping(true);
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      const response = {
-        id: createId(),
-        sender: "partner",
-        text: buildResponse(),
-        timestamp: moment().format("h:mm a")
-      };
-      setMessages((prev) => [...prev, response]);
-      setIsTyping(false);
-    }, 1400);
+  const outgoing = {
+    id: createId(),
+    sender: "you",
+    text,
+    timestamp: formatTime(new Date()) // Changed
   };
+
+  setMessages((prev) => [...prev, outgoing]);
+  setDraft("");
+
+  setIsTyping(true);
+  if (typingTimeoutRef.current) {
+    clearTimeout(typingTimeoutRef.current);
+  }
+
+  typingTimeoutRef.current = setTimeout(() => {
+    const response = {
+      id: createId(),
+      sender: "partner",
+      text: buildResponse(),
+      timestamp: formatTime(new Date()) // Changed
+    };
+    setMessages((prev) => [...prev, response]);
+    setIsTyping(false);
+  }, 1400);
+};
 
   const handlePrompt = (prompt) => {
     setDraft(prompt);

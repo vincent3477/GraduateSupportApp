@@ -33,7 +33,7 @@ export const ROOMS = [
     id: "agriculture",
     label: "College of Agriculture",
     description: "Sustainable farming, food systems innovation, and ag-tech discoveries.",
-    image: "https://images.unsplash.com/photo-1500937386664-56b8cf822e96?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1200&q=80",
   },
   {
     id: "education",
@@ -45,7 +45,7 @@ export const ROOMS = [
     id: "health-sciences",
     label: "College of Health Sciences",
     description: "Clinical rotations, patient stories, and wellbeing research threads.",
-    image: "https://images.unsplash.com/photo-1580281657521-4b46f4dcbbf0?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1519494080410-f9aa76cb4283?auto=format&fit=crop&w=1200&q=80",
   },
 ];
 

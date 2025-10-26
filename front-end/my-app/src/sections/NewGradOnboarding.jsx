@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Rocket, Target, Heart, Sparkles } from "lucide-react";
+import { Check, ChevronRight, Rocket, Target, Heart, Sparkles, ArrowLeft } from "lucide-react";
 import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
 import SupportDashboard from "../components/SupportDashboard.jsx";
 
@@ -10,6 +10,9 @@ const mockApi = {
     // Simulate an ID and persistence
     const user = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...profile };
     localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("gradpath:user-updated"));
+    }
     await new Promise((r) => setTimeout(r, 300));
     return user;
   },
@@ -167,14 +170,23 @@ function Stepper({ step }) {
 }
 
 // ----------------------------- Pages
-function AccountForm({ onComplete }) {
-  const [name, setName] = useState("");
-  const [birthday, setBirthday] = useState("");
-  const [major, setMajor] = useState("");
-  const [location, setLocation] = useState("");
-  const [email, setEmail] = useState("");
+function AccountForm({ onComplete, initialUser }) {
+  const [name, setName] = useState(initialUser?.name ?? "");
+  const [birthday, setBirthday] = useState(initialUser?.birthday ?? "");
+  const [major, setMajor] = useState(initialUser?.major ?? "");
+  const [location, setLocation] = useState(initialUser?.location ?? "");
+  const [email, setEmail] = useState(initialUser?.email ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!initialUser) return;
+    setName(initialUser.name ?? "");
+    setBirthday(initialUser.birthday ?? "");
+    setMajor(initialUser.major ?? "");
+    setLocation(initialUser.location ?? "");
+    setEmail(initialUser.email ?? "");
+  }, [initialUser]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -182,7 +194,24 @@ function AccountForm({ onComplete }) {
     setLoading(true);
     try {
       if (!name || !email) throw new Error("Name and Email are required.");
-      const user = await mockApi.createAccount({ name, birthday, major, location, email });
+      let user;
+      if (initialUser?.id) {
+        user = {
+          ...initialUser,
+          name,
+          birthday,
+          major,
+          location,
+          email,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("gradpath:user-updated"));
+        }
+      } else {
+        user = await mockApi.createAccount({ name, birthday, major, location, email });
+      }
       onComplete(user);
     } catch (err) {
       setError(err.message);
@@ -226,11 +255,19 @@ function AccountForm({ onComplete }) {
 // The format from generateRecommendations() function: [{"name": "Master your field", "desc": "Deep dive into fundamentals and advanced concepts", "completed": false}]
 // The "completed" field should be indicated by a checkmark.
 
-function PreferencesForm({ user, onComplete }) {
-  const [favorites, setFavorites] = useState([]); // up to 3
-  const [goals, setGoals] = useState([]); // up to 3
+function PreferencesForm({ user, onComplete, initialFavorites = [], initialGoals = [] }) {
+  const [favorites, setFavorites] = useState(initialFavorites); // up to 3
+  const [goals, setGoals] = useState(initialGoals); // up to 3
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setFavorites(initialFavorites);
+  }, [initialFavorites]);
+
+  useEffect(() => {
+    setGoals(initialGoals);
+  }, [initialGoals]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -281,7 +318,7 @@ function PreferencesForm({ user, onComplete }) {
         <div className="mt-6 flex flex-col gap-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p>
-              <span className="font-semibold">Why we ask:</span> Knowing your needs lets us suggest caring check-ins,
+              <span className="font-semibold">Why we ask:</span> Knowing your needs lets us suggest personalized
               community spaces, and next steps that truly fit.
             </p>
           </div>
@@ -576,32 +613,29 @@ export default function NewGradOnboarding() {
     if (u && p && r?.items) setStep(3);
   }, []);
 
+  const handleBack = () => {
+    setStep((prev) => Math.max(1, prev - 1));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-[#f6efdc] to-[#e2edfb] px-4 py-10">
       <header className="mx-auto mb-8 flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2F4D6A] text-[#FFFDF6]">GP</div>
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="interactive inline-flex items-center gap-2 rounded-xl border border-[#ded6c0] bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#2F4D6A] hover:text-[#2F4D6A]"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+          )}
+
           <div>
             <h1 className="text-xl font-bold text-slate-900">GradPath Support Circle</h1>
-            <p className="text-xs text-slate-500">A gentle space to name feelings, gather care, and plan soft next steps</p>
+            <p className="text-xs text-slate-500">A space to build supportive community and plan next steps</p>
           </div>
         </div>
-        {step === 3 && (
-          <button
-            onClick={() => {
-              localStorage.removeItem(LS_KEYS.user);
-              localStorage.removeItem(LS_KEYS.prefs);
-              localStorage.removeItem(LS_KEYS.recs);
-              setUser(null);
-              setPrefs(null);
-              setRecs([]);
-              setStep(1);
-            }}
-            className="interactive self-start rounded-xl border border-[#ded6c0] bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-[#f7f2e4]"
-          >
-            Clear my story (demo reset)
-          </button>
-        )}
       </header>
 
       <main>
@@ -610,6 +644,7 @@ export default function NewGradOnboarding() {
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <AccountForm
+                initialUser={user}
                 onComplete={(u) => {
                   setUser(u);
                   setStep(2);
@@ -622,6 +657,8 @@ export default function NewGradOnboarding() {
             <motion.div key="step2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <PreferencesForm
                 user={user}
+                initialFavorites={prefs?.favorites ?? []}
+                initialGoals={prefs?.goals ?? []}
                 onComplete={({ prefs: p, recs: r }) => {
                   setPrefs(p);
                   setRecs(r);
@@ -640,7 +677,7 @@ export default function NewGradOnboarding() {
       </main>
 
       <footer className="mx-auto mt-12 max-w-6xl text-center text-xs text-slate-500">
-        Built with ❤️ to remind new grads they are never navigating the next chapter alone. (Demo only — connect your backend to go live.)
+        Team 206: Built with ❤️ to remind new grads they are never navigating the next chapter alone. 
       </footer>
     </div>
   );

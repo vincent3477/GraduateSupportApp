@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SupportDashboard from "../components/SupportDashboard.jsx";
+import PageBackButton from "../components/PageBackButton.jsx";
 import { loadSupportData } from "../utils/supportStorage.js";
 
 const SupportBoard = () => {
@@ -40,6 +41,7 @@ const SupportBoard = () => {
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-white to-[#f0ede2] px-4 py-16 text-slate-900">
       <div className="mx-auto max-w-6xl space-y-12">
+        <PageBackButton fallback="/" className="w-fit" />
         <header className="text-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#d8d2c0] bg-white/70 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
             GradPath Support Board

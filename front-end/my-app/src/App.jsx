@@ -1,10 +1,15 @@
+<<<<<<< HEAD
 import { Route, Routes, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+=======
+import { Route, Routes, useLocation } from "react-router-dom";
+>>>>>>> df3b948 (added new features)
 import Home from "./sections/Home.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import Login from "./pages/Login.jsx";
 import SupportBoard from "./pages/SupportBoard.jsx";
 import NavBar from "./components/NavBar.jsx";
+<<<<<<< HEAD
 import Register from "./pages/Register.jsx";
 
 // Protected Route wrapper component
@@ -67,9 +72,25 @@ const App = () => {
   return (
     <div className="min-h-screen bg-[#FFFDF6] text-slate-900">
       <NavBar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}/>
+=======
+import PrivateMatchChat from "./pages/PrivateMatchChat.jsx";
+import ScrollToTop from "./components/ScrollToTop.jsx";
+
+const App = () => {
+  const location = useLocation();
+  const hideGlobalNav = ["/community-chat", "/private-match-chat"].some((prefix) =>
+    location.pathname.startsWith(prefix)
+  );
+
+  return (
+    <div className="min-h-screen bg-[#FFFDF6] text-slate-900">
+      {!hideGlobalNav && <NavBar />}
+      <ScrollToTop />
+>>>>>>> df3b948 (added new features)
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
+<<<<<<< HEAD
         
         {/* Login route - redirect to support if already authenticated */}
         <Route 
@@ -105,6 +126,14 @@ const App = () => {
           path="*" 
           element={<Navigate to={isAuthenticated ? "/support" : "/"} replace />} 
         />
+=======
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/support" element={<SupportBoard />} />
+        <Route path="/community-chat" element={<CommunityChat />} />
+        <Route path="/community-chat/:roomId" element={<RoomChat />} />
+        <Route path="/private-match-chat" element={<PrivateMatchChat />} />
+>>>>>>> df3b948 (added new features)
       </Routes>
     </div>
   );

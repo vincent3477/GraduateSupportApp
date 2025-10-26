@@ -61,8 +61,7 @@ const Home = () => {
                 </div>
             </motion.h1>
             <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              GradPath combines emotional check-ins, community accountability, and bite-sized guidance so you can honor
-              what you are feeling while still making steady moves toward what is next.
+              GradPath combines emotional and community support, so you can moves toward what is next.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-5">
               <Link
@@ -111,8 +110,7 @@ const Home = () => {
               <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2F4D6A]">How it works</p>
               <h2 className="text-3xl font-semibold text-slate-900">A grounded path that adapts with you</h2>
               <p className="text-base text-slate-600">
-                We pair emotional wellbeing prompts with community touchpoints and gentle planning tools. Everything is
-                lightweight, human, and paced so you can breathe while you build.
+                We pair emotional wellbeing prompts with community touchpoints and gentle planning tools for you to have your own pace.
               </p>
             </div>
             <div className="space-y-6">
@@ -130,8 +128,8 @@ const Home = () => {
         <footer className="flex flex-col gap-6 rounded-3xl border border-[#e4dcc4] bg-white p-8 text-center shadow-lg shadow-[#2F4D6A]/10 lg:p-12">
           <h2 className="text-3xl font-semibold text-slate-900">Ready to feel supported in the transition?</h2>
           <p className="mx-auto max-w-2xl text-base text-slate-600">
-            Join the guided onboarding to unlock tailored prompts, resource recommendations, and progress tracking made
-            for new graduates navigating the first career leap.
+            Join the guided onboarding to unlock personalized prompts, resource recommendations, and progress tracking made
+            for new graduates navigating life after college.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

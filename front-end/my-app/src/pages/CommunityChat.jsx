@@ -1,104 +1,48 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { NAV_LEFT, NAV_RIGHT, ROOMS } from "../data/rooms.js";
-
-const NAME_STORAGE_KEY = "gradpath_chat_display_name";
+import { ROOMS } from "../data/rooms.js";
+import { loadSupportData } from "../utils/supportStorage.js";
+import PageBackButton from "../components/PageBackButton.jsx";
 
 const CommunityChat = () => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState(() => localStorage.getItem(NAME_STORAGE_KEY) || "");
+  const profile = useMemo(() => loadSupportData().user || null, []);
+  const profileName = profile?.name?.trim() || "";
   const [statusMessage, setStatusMessage] = useState("");
 
-  useEffect(() => {
-    if (userName.trim()) {
-      localStorage.setItem(NAME_STORAGE_KEY, userName.trim());
-    }
-  }, [userName]);
-
-  const handleScrollTo = (roomId) => {
-    const el = document.getElementById(`room-section-${roomId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   const handleJoin = (roomId) => {
-    const trimmed = userName.trim();
-    if (!trimmed) {
-      setStatusMessage("Add your name so grads know who just joined the room.");
+    if (!profileName) {
+      setStatusMessage("Finish onboarding so we can greet you properly in the chat rooms.");
       return;
     }
-    localStorage.setItem(NAME_STORAGE_KEY, trimmed);
-    setStatusMessage("");
-    navigate(`/community-chat/${roomId}`, { state: { name: trimmed } });
+    navigate(`/community-chat/${roomId}`, { state: { profile } });
   };
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-white to-[#f0ede2] px-4 py-16 text-slate-900">
       <div className="mx-auto max-w-6xl space-y-12">
-        <header className="text-center space-y-4">
+        <PageBackButton fallback="/support" className="w-fit" />
+
+        <header className="space-y-4 text-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#d8d2c0] bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
             GradPath Live Community
           </p>
           <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-            Choose your college and drop into the live chat
+            Choose your college chat and drop in instantly
           </h1>
           <p className="mx-auto max-w-2xl text-base text-slate-600">
-            Each room keeps a running summary so you never miss the vibe. Add your name, pick your college, and go from observing to contributing in a heartbeat.
+            We use the name saved during onboarding so your peers recognise you the moment you enter. Pick a college below to see what graduates are sharing right now.
           </p>
         </header>
 
-        <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-3xl border border-[#e4dcc4] bg-white/80 px-6 py-5 shadow-sm shadow-[#2F4D6A]/15 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex-1 text-left">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2F4D6A]">Your display name</h2>
-            <p className="text-sm text-slate-600">Let others know who just joined the circle. You can edit this anytime.</p>
-          </div>
-          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <input
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="e.g., Morgan (Architecture '24)"
-              className="w-full rounded-full border border-[#d8d2c0] bg-white px-4 py-2 text-sm text-slate-700 outline-none focus:border-[#2F4D6A] sm:max-w-xs"
-            />
-            <button
-              type="button"
-              onClick={() => userName.trim() && setStatusMessage("Name saved. Pick a chat below.")}
-              className="interactive rounded-full border border-[#d8d2c0] px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#2F4D6A] hover:text-[#2F4D6A]"
-            >
-              Save
+        {statusMessage && (
+          <div className="mx-auto max-w-3xl rounded-2xl border border-[#fbbf24] bg-[#fff8eb] px-4 py-3 text-sm text-[#92400e]">
+            {statusMessage}
+            <button onClick={() => navigate('/onboarding')} className="ml-2 underline transition hover:text-[#b45309]">
+              Complete onboarding
             </button>
           </div>
-        </div>
-        {statusMessage && (
-          <p className="text-center text-sm text-red-500">{statusMessage}</p>
         )}
-
-        <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 rounded-full border border-[#e4dcc4] bg-white/80 px-6 py-3 text-sm font-medium text-slate-600 shadow-sm">
-          <div className="flex flex-wrap gap-3">
-            {NAV_LEFT.map((room) => (
-              <button
-                key={room.id}
-                type="button"
-                className="interactive rounded-full border border-[#d8d2c0] bg-white px-4 py-2 transition hover:border-[#2F4D6A] hover:text-[#2F4D6A]"
-                onClick={() => handleScrollTo(room.id)}
-              >
-                {room.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {NAV_RIGHT.map((room) => (
-              <button
-                key={room.id}
-                type="button"
-                className="interactive rounded-full border border-[#d8d2c0] bg-white px-4 py-2 transition hover:border-[#2F4D6A] hover:text-[#2F4D6A]"
-                onClick={() => handleScrollTo(room.id)}
-              >
-                {room.label}
-              </button>
-            ))}
-          </div>
-        </nav>
 
         <div className="space-y-12">
           {ROOMS.map((room, index) => {
@@ -128,7 +72,7 @@ const CommunityChat = () => {
                       className="interactive inline-flex items-center justify-center rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
                       onClick={() => handleJoin(room.id)}
                     >
-                      Enter {room.label} chat room
+                      Enter {room.label} chat
                     </button>
                   </div>
                 </div>

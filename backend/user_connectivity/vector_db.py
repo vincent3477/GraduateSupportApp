@@ -334,6 +334,7 @@ class UserVectorDB:
         favorites = preferences.get('favorites', [])
 
         return {
+            'name': session.get('name', ''),
             'major': session.get('major', ''),
             'location': session.get('location', ''),
             'goals_json': json.dumps(goals),
@@ -364,6 +365,7 @@ class UserVectorDB:
             favorites = []
 
         return {
+            'name': raw_metadata.get('name', ''),
             'major': raw_metadata.get('major', ''),
             'location': raw_metadata.get('location', ''),
             'goals': goals,

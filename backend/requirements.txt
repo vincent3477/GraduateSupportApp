@@ -10,6 +10,11 @@ uvicorn[standard]>=0.23.0     # ASGI server for FastAPI
 pydantic>=2.0.0               # Data validation (included with FastAPI)
 email-validator>=2.0.0        # Email validation for Pydantic
 
+# Authentication & External API
+PyJWT>=2.8.0                  # JWT token generation and verification
+werkzeug>=3.0.0               # Password hashing utilities
+requests>=2.31.0              # HTTP client for Toolhouse API
+
 # Note: This project requires Python 3.12 due to ChromaDB compatibility
 # Python 3.14 is not yet supported by the ML/data ecosystem
 

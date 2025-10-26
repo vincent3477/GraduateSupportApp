@@ -1,4 +1,5 @@
 """
+ADDED EVERYTHING FROM TASK_MANAGER.PY INTO THIS FILE, FOR CONSISTENT API CALLS BETWEEN FRONTEND AND BACKEND INTO JUST ONE SERVER
 FastAPI Backend for Graduate Support App
 
 Hybrid approach:
@@ -6,23 +7,26 @@ Hybrid approach:
 - Allows new users to join and be stored in ChromaDB
 - Everyone matches with everyone (test + new users)
 
-
-Implemented so far:
-  - ✅ Create user
-  - ✅ Add preferences + generate embedding
-  - ✅ Find similar users
-  - ✅ Database stats
-  - ✅ CORS configuration
-  - ✅ Error handling (basic)
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uvicorn
+import requests
+import json
+import jwt
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta, timezone
 
-from user_onboarding import create_user_session, update_user_preferences
+from user_onboarding import (
+    create_user_session,
+    update_user_preferences,
+    get_user_session,
+    get_all_sessions,
+    clear_all_sessions
+)
 from user_connectivity import UserVectorDB
 
 # ============================================================================
@@ -53,6 +57,130 @@ app.add_middleware(
 
 # Initialize ChromaDB - Uses test_chroma_data with 100 pre-loaded users
 vector_db = UserVectorDB(persist_directory="./test_chroma_data")
+
+# ============================================================================
+# Authentication & Agent Integration
+# ============================================================================
+
+SECRET_KEY = 'test_key'  # TODO: Move to environment variable for production
+users_list = {}  # In-memory storage for authenticated users
+
+def ask_agent(goals):
+    """Query the Toolhouse agent with user goals"""
+    agent_id = "de98c4c0-988b-4f31-9476-faf1ebf66e65"
+    url = f"https://agents.toolhouse.ai/{agent_id}"
+
+    payload = {"message": f"{goals}"}
+    headers = {}
+
+    print("about to passin in the request, ", payload)
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            return response.text  # This should be a JSON string
+        else:
+            print(f"Failed to query agent. Status code: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Error querying agent: {str(e)}")
+        return None
+
+
+def parse_agent_response(json_string: str) -> Optional[List[Dict[str, Any]]]:
+    """
+    Parse the agent's JSON response
+    Agent returns: [{name: str, desc: str, completed: bool}, ...]
+
+    Args:
+        json_string: JSON string from the agent
+
+    Returns:
+        List of card dictionaries or None if parsing fails
+    """
+    try:
+        # Parse the JSON string
+        print("string we got is ", json_string)
+        cards = json.loads(json_string)
+
+        # Validate that it's a list
+        if not isinstance(cards, list):
+            print(f"Error: Expected a list, got {type(cards).__name__}")
+            return None
+
+        # Validate and clean each card
+        validated_cards = []
+        for idx, card in enumerate(cards):
+            if not isinstance(card, dict):
+                print(f"Warning: Item at index {idx} is not a dictionary, skipping")
+                continue
+
+            # Extract fields (agent format is already correct)
+            print(idx, type(card), card)
+
+            name = card.get("name", f"Task {idx + 1}")
+            desc = card.get("desc", "")
+            completed = card.get("completed", False)
+
+            # Type validation and conversion
+            if not isinstance(name, str):
+                name = str(name)
+            if not isinstance(desc, str):
+                desc = str(desc)
+            if not isinstance(completed, bool):
+                completed = bool(completed)
+
+            validated_cards.append({
+                "name": name.strip(),
+                "desc": desc.strip(),
+                "completed": completed
+            })
+
+        return validated_cards
+
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON from agent - {str(e)}")
+        return None
+    except Exception as e:
+        print(f"Error parsing agent response: {str(e)}")
+        return None
+
+
+def update_user_preference(card_name: str, completed: bool):
+    """
+    Update user preference for card completion status
+
+    This is a placeholder function for future implementation.
+    Currently used by the update-card endpoint but doesn't persist data.
+
+    Args:
+        card_name: Name of the recommendation card
+        completed: Whether the card has been completed
+
+    TODO: Implement persistent storage of card completion status
+    """
+    pass  # Placeholder - implement persistence later
+
+
+def get_current_user(request: Request):
+    """Extracts and verifies JWT token from Authorization header"""
+    auth_header = request.headers.get('Authorization')
+
+    if not auth_header or not auth_header.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    token = auth_header.split(' ')[1]
+
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return {
+            "user_id": decoded['user_id'],
+            "email": decoded['email']
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 # ============================================================================
 # Pydantic Models (Request/Response Schemas)
@@ -110,6 +238,25 @@ class SimilarUsersResponse(BaseModel):
     similar_users: List[SimilarUser]
 
 
+class UpdateCardRequest(BaseModel):
+    """Schema for updating card completion status"""
+    card_name: str
+    completed: bool = False
+
+
+class LoginRequest(BaseModel):
+    """Schema for login credentials"""
+    email: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    """Schema for user registration"""
+    email: str
+    password: str
+    name: str
+
+
 # ============================================================================
 # API Endpoints
 # ============================================================================
@@ -127,10 +274,22 @@ async def root():
         "version": "1.0.0",
         "docs": "http://localhost:8000/docs",
         "endpoints": {
-            "create_user": "POST /api/users",
-            "add_preferences": "POST /api/users/{user_id}/preferences",
-            "find_similar": "GET /api/users/{user_id}/similar",
-            "stats": "GET /api/stats"
+            "user_management": {
+                "create_user": "POST /api/users",
+                "add_preferences": "POST /api/users/{user_id}/preferences",
+                "find_similar": "GET /api/users/{user_id}/similar",
+                "stats": "GET /api/stats"
+            },
+            "recommendations": {
+                "get_recommendations": "GET /api/recommendations",
+                "update_card": "POST /api/update-card"
+            },
+            "authentication": {
+                "register": "POST /api/register",
+                "login": "POST /api/login",
+                "logout": "POST /api/logout",
+                "verify_token": "GET /api/verify-token"
+            }
         }
     }
 
@@ -317,6 +476,212 @@ async def get_stats():
             status_code=500,
             detail=f"Failed to get stats: {str(e)}"
         )
+
+
+@app.get("/api/recommendations")
+async def get_recommendations_endpoint(
+    name: Optional[str] = Query(None),
+    major: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+    favorites: List[str] = Query([]),
+    goals: List[str] = Query([]),
+    # current_user: dict = Depends(get_current_user)  # Auth disabled for demo
+):
+    """
+    Generate AI-powered recommendations using Toolhouse agent
+
+    Takes user profile data and returns personalized career recommendations.
+
+    Parameters:
+        name: User's name
+        major: User's major/degree
+        location: User's location
+        favorites: List of favorite activities/interests
+        goals: List of career goals
+
+    Returns:
+        List of recommendation cards: [{name, desc, completed}, ...]
+    """
+    print(f"📥 Received recommendations request:")
+    print(f"   name={name}, major={major}, location={location}")
+    print(f"   favorites={favorites}")
+    print(f"   goals={goals}")
+
+    # Build query for Toolhouse agent
+    query_parts = []
+    if name:
+        query_parts.append(f"User: {name}")
+    if major:
+        query_parts.append(f"Major: {major}")
+    if location:
+        query_parts.append(f"Location: {location}")
+    if favorites:
+        query_parts.append(f"Interests: {', '.join(favorites)}")
+    if goals:
+        query_parts.append(f"Goals: {', '.join(goals)}")
+    agent_query = ". ".join(query_parts) if query_parts else "Generate personalized recommendations"
+
+    print("🤖 Querying Toolhouse agent...")
+    agent_response = ask_agent(agent_query)
+    if not agent_response:
+        raise HTTPException(status_code=500, detail="Failed to get response from agent")
+
+    cards = parse_agent_response(agent_response)
+    if cards is None:
+        raise HTTPException(status_code=500, detail="Failed to parse agent response")
+
+    print(f"📤 Returning {len(cards)} recommendation cards")
+    return cards
+
+
+@app.post("/api/update-card")
+async def update_card_endpoint(request: UpdateCardRequest):
+    """
+    Update a card's completion status
+
+    This endpoint is a placeholder for tracking which recommendations
+    users have completed. Currently returns success without persistence.
+
+    Parameters:
+        request: UpdateCardRequest with card_name and completed status
+
+    Returns:
+        Success status with card details
+    """
+    if not request.card_name:
+        raise HTTPException(status_code=400, detail="card_name is required")
+
+    # TODO: Implement persistent storage of card completion status
+    return {
+        "success": True,
+        "card_name": request.card_name,
+        "completed": request.completed
+    }
+
+
+@app.post('/api/login')
+def login(credentials: LoginRequest):
+    """
+    Authenticate user and return JWT token
+
+    Parameters:
+        credentials: LoginRequest with email and password
+
+    Returns:
+        JWT token and user details
+    """
+    email = credentials.email
+    password = credentials.password
+
+    # Check if user exists
+    user = users_list.get(email)
+
+    if not user or not check_password_hash(user['password_hash'], password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Generate JWT token
+    token = jwt.encode({
+        'user_id': user['id'],
+        'email': user['email'],
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
+    }, SECRET_KEY, algorithm='HS256')
+
+    return {
+        "success": True,
+        "token": token,
+        "user": {
+            "id": user['id'],
+            "email": user['email'],
+            "name": user['name']
+        }
+    }
+
+
+@app.post('/api/logout')
+def logout():
+    """
+    Logout endpoint (stateless - client should discard token)
+
+    Returns:
+        Success message
+    """
+    return {"success": True, "message": "Logged out successfully"}
+
+
+@app.post('/api/register')
+def register(data: RegisterRequest):
+    """
+    Register a new user account
+
+    Parameters:
+        data: RegisterRequest with email, password, and name
+
+    Returns:
+        JWT token and user details
+    """
+    email = data.email
+    password = data.password
+    name = data.name
+
+    # Check if user already exists
+    if email in users_list:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    # Create new user
+    user_id = len(users_list) + 1
+    users_list[email] = {
+        "id": user_id,
+        "email": email,
+        "name": name,
+        "password_hash": generate_password_hash(password)
+    }
+
+    # Generate JWT token
+    token = jwt.encode({
+        'user_id': user_id,
+        'email': email,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
+    }, SECRET_KEY, algorithm='HS256')
+
+    return {
+        "success": True,
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": email,
+            "name": name
+        }
+    }
+
+
+@app.get('/api/verify-token')
+def verify_token(request: Request):
+    """
+    Verify JWT token validity
+
+    Checks Authorization header for valid Bearer token.
+
+    Returns:
+        User ID and email from token
+    """
+    auth_header = request.headers.get('Authorization')
+
+    if not auth_header or not auth_header.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    token = auth_header.split(' ')[1]
+
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return {
+            "success": True,
+            "user_id": decoded['user_id'],
+            "email": decoded['email']
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 # ============================================================================

@@ -7,10 +7,11 @@ import PageBackButton from "../components/PageBackButton.jsx";
 
 const CHAT_SERVER_URL = import.meta.env.VITE_CHAT_SERVER_URL ?? "http://localhost:4000";
 const COMMUNITY_SYSTEM_NAME = "GradPath Community";
-const createId = () =>
-  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const normalizeId = (entry, timestamp) => {
+  if (entry.id) return entry.id;
+  const base = `${entry.message ?? entry.text ?? ""}`.trim();
+  return `${timestamp}-${base}`;
+};
 
 const formatMessage = (entry, fallbackName = COMMUNITY_SYSTEM_NAME) => {
   if (!entry) return null;
@@ -18,7 +19,7 @@ const formatMessage = (entry, fallbackName = COMMUNITY_SYSTEM_NAME) => {
   const text = (entry.message ?? entry.text ?? "").trim();
   if (!text) return null;
   return {
-    id: entry.id ?? createId(),
+    id: normalizeId(entry, timestamp),
     username: entry.name || entry.username || fallbackName,
     text,
     time: moment(timestamp).format("h:mm A"),
@@ -40,6 +41,16 @@ const RoomChat = () => {
   const [members, setMembers] = useState([]);
   const [statusMessage, setStatusMessage] = useState("");
   const messageListRef = useRef(null);
+  const addMessage = useCallback((incoming) => {
+    const formatted = formatMessage(incoming);
+    if (!formatted) return;
+    setMessages((prev) => {
+      if (prev.some((msg) => msg.id === formatted.id)) {
+        return prev;
+      }
+      return [...prev, formatted];
+    });
+  }, []);
 
   const joinRoom = useCallback(() => {
     if (!room) return;
@@ -75,33 +86,58 @@ const RoomChat = () => {
     if (!socket) return;
 
     socket.on("chat_history", (history = []) => {
-      setMessages(history.map((item) => formatMessage(item)).filter(Boolean));
+      setMessages((prev) => {
+        const merged = [...prev];
+        history.forEach((item) => {
+          const formatted = formatMessage(item);
+          if (formatted && !merged.some((msg) => msg.id === formatted.id)) {
+            merged.push(formatted);
+          }
+        });
+        return merged;
+      });
     });
 
     socket.on("chat_message", (payload) => {
-      const formatted = formatMessage(payload);
-      if (!formatted) return;
-      setMessages((prev) => [...prev, formatted]);
+      addMessage(payload);
     });
 
     socket.on("system_message", (payload) => {
-      const formatted = formatMessage({
+      addMessage({
         ...payload,
         name: COMMUNITY_SYSTEM_NAME,
         type: "system",
       });
-      if (!formatted) return;
-      setMessages((prev) => [...prev, formatted]);
     });
 
     socket.on("room_users", (users = []) => {
-      setMembers(
-        users.map((user) => ({
-          id: user.id,
-          username: user.name || user.username || "Friend",
-          profile: user.profile ?? {},
-        }))
-      );
+      const seenUsernames = new Set();
+      const next = users
+        .map((user) => {
+          const username = user.name || user.username || "Friend";
+          const normalized = username.trim().toLowerCase();
+          return {
+            id: user.id ?? normalized,
+            username,
+            normalized,
+            profile: user.profile ?? {},
+          };
+        })
+        .filter((user) => {
+          if (seenUsernames.has(user.normalized)) return false;
+          seenUsernames.add(user.normalized);
+          return true;
+        });
+
+      setMembers((prev) => {
+        if (
+          prev.length === next.length &&
+          prev.every((item, idx) => item.normalized === next[idx].normalized)
+        ) {
+          return prev;
+        }
+        return next.map(({ normalized, ...rest }) => rest);
+      });
     });
 
     return () => {
@@ -110,7 +146,7 @@ const RoomChat = () => {
       socket.off("system_message");
       socket.off("room_users");
     };
-  }, [socket]);
+  }, [socket, addMessage]);
 
   useEffect(() => () => {
     if (socket) socket.disconnect();
@@ -177,11 +213,11 @@ const RoomChat = () => {
         <div className="grid gap-6 lg:grid-cols-[1fr_2fr_1fr]">
           <aside className="flex h-full flex-col gap-6 rounded-3xl border border-[#e4dcc4] bg-white/85 p-6 shadow-sm">
             <div>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2F4D6A]">Room Name</h2>
+              <h2 className="text-sm font-semibold uppercase text-[#2F4D6A]">Room Name</h2>
               <p className="mt-2 text-xl font-semibold text-slate-800">{room.label}</p>
             </div>
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2F4D6A]">Users</h3>
+              <h3 className="text-sm font-semibold uppercase text-[#2F4D6A]">Users</h3>
               {members.length === 0 ? (
                 <p className="text-xs text-slate-500">No one is chatting yet.</p>
               ) : (
@@ -253,7 +289,7 @@ const RoomChat = () => {
             <p className="text-sm text-slate-600">
               Share recent wins, ask thoughtful questions, and celebrate others. Keep it respectful and useful for your peers.
             </p>
-            <p className="text-xs uppercase tracking-[0.3em] text-[#2F4D6A]">Quick etiquette</p>
+            <p className="text-xs uppercase text-[#2F4D6A]">Quick etiquette</p>
             <ul className="space-y-2 text-sm text-slate-700">
               <li>• Lead with curiosity and kindness.</li>
               <li>• Add context so everyone can learn from you.</li>

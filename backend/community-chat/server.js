@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import moment from "moment";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import crypto from "node:crypto";
+import { userJoin, getCurrentUser, userLeave, getRoomUsers } from "./utils/users.js";
 
 dotenv.config();
 
@@ -44,21 +44,13 @@ const ROOM_DEFINITIONS = {
   },
 };
 
-const roomState = Object.fromEntries(
-  Object.keys(ROOM_DEFINITIONS).map((roomId) => [
-    roomId,
-    {
-      users: new Map(),
-      messages: [],
-    },
-  ])
+const roomMessages = new Map(
+  Object.keys(ROOM_DEFINITIONS).map((roomId) => [roomId, []])
 );
-
-const socketRoomMap = new Map();
 
 io.on("connection", (socket) => {
   socket.on("join_room", ({ room, name }) => {
-    if (!roomState[room]) {
+    if (!roomMessages.has(room)) {
       socket.emit("system_message", {
         message: "That room is not available right now.",
         timestamp: moment().toISOString(),
@@ -68,63 +60,60 @@ io.on("connection", (socket) => {
 
     const trimmedName = name?.trim() || "Friend";
     socket.join(room);
-    socketRoomMap.set(socket.id, { room, name: trimmedName });
-    roomState[room].users.set(socket.id, trimmedName);
+    const { isNewJoin } = userJoin(socket.id, trimmedName, room);
 
-    socket.emit("chat_history", roomState[room].messages);
-    io.to(room).emit("room_users", getUsers(room));
-    io.to(room).emit("system_message", {
-      message: `${trimmedName} just joined ${ROOM_DEFINITIONS[room].label}.`
-        + " Feel free to welcome them!",
-      timestamp: moment().toISOString(),
-    });
+    socket.emit("chat_history", roomMessages.get(room) ?? []);
+    io.to(room).emit("room_users", serializeUsers(room));
+    if (isNewJoin) {
+      io.to(room).emit("system_message", {
+        message: `${trimmedName} just joined ${ROOM_DEFINITIONS[room].label}.`,
+        timestamp: moment().toISOString(),
+      });
+    }
   });
 
   socket.on("chat_message", ({ room, message }) => {
-    const current = socketRoomMap.get(socket.id);
-    if (!current || !roomState[room]) return;
+    const current = getCurrentUser(socket.id);
+    if (!current || current.room !== room || !roomMessages.has(room)) return;
     const trimmedMessage = message?.trim();
     if (!trimmedMessage) return;
 
     const timestamp = moment().toISOString();
     const entry = {
-      id: crypto.randomUUID(),
-      name: current.name,
+      id: `${socket.id}-${timestamp}`,
+      name: current.username,
       message: trimmedMessage,
       timestamp,
     };
 
-    roomState[room].messages.push(entry);
-    if (roomState[room].messages.length > 200) {
-      roomState[room].messages.shift();
+    const log = roomMessages.get(room);
+    log.push(entry);
+    if (log.length > 200) {
+      log.shift();
     }
 
     io.to(room).emit("chat_message", entry);
   });
 
   socket.on("leave_room", () => {
-    const current = socketRoomMap.get(socket.id);
+    const current = userLeave(socket.id);
     if (!current) return;
-    const { room, name } = current;
+    const { room, username } = current;
     socket.leave(room);
-    socketRoomMap.delete(socket.id);
-    roomState[room]?.users.delete(socket.id);
-    io.to(room).emit("room_users", getUsers(room));
+    io.to(room).emit("room_users", serializeUsers(room));
     io.to(room).emit("system_message", {
-      message: `${name} left the room.`,
+      message: `${username} left the room.`,
       timestamp: moment().toISOString(),
     });
   });
 
   socket.on("disconnect", () => {
-    const current = socketRoomMap.get(socket.id);
+    const current = userLeave(socket.id);
     if (!current) return;
-    const { room, name } = current;
-    roomState[room]?.users.delete(socket.id);
-    socketRoomMap.delete(socket.id);
-    io.to(room).emit("room_users", getUsers(room));
+    const { room, username } = current;
+    io.to(room).emit("room_users", serializeUsers(room));
     io.to(room).emit("system_message", {
-      message: `${name} lost connection.`,
+      message: `${username} left the chat.`,
       timestamp: moment().toISOString(),
     });
   });
@@ -132,7 +121,7 @@ io.on("connection", (socket) => {
 
 app.get("/summary/:room", async (req, res) => {
   const { room } = req.params;
-  if (!roomState[room]) {
+  if (!roomMessages.has(room)) {
     return res.status(404).json({ summary: "Room not found." });
   }
 
@@ -144,12 +133,16 @@ server.listen(PORT, () => {
   console.log(`Community chat server listening on port ${PORT}`);
 });
 
-function getUsers(room) {
-  return Array.from(roomState[room]?.users.entries() ?? []).map(([id, name]) => ({ id, name }));
+function serializeUsers(room) {
+  return getRoomUsers(room).map((user) => ({
+    id: user.id,
+    name: user.username,
+    username: user.username,
+  }));
 }
 
 async function summarizeRoom(room) {
-  const messages = roomState[room]?.messages ?? [];
+  const messages = roomMessages.get(room) ?? [];
   if (messages.length === 0) {
     return "No conversation yet. Start the chat to build the highlight reel.";
   }
@@ -159,27 +152,5 @@ async function summarizeRoom(room) {
     .map((msg) => `${msg.name}: ${msg.message}`)
     .join("\n");
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return fallbackSummary(transcript);
-  }
-
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `Summarise the key themes in this community chat:\n${transcript}\n` +
-      "Highlight main topics, tone, and any action items. Keep it under 120 words.";
-
-    const result = await model.generateContent(prompt);
-    return result.response.text()?.trim() || fallbackSummary(transcript);
-  } catch (error) {
-    console.error("Gemini summarisation failed", error);
-    return fallbackSummary(transcript);
-  }
-}
-
-function fallbackSummary(transcript) {
-  const lines = transcript.split("\n");
-  const last = lines.slice(-3).join(" ");
-  return `Conversation is warming up around: ${last}`;
+  
 }

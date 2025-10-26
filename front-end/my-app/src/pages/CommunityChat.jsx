@@ -31,7 +31,7 @@ const CommunityChat = () => {
             Choose your college chat and drop in instantly
           </h1>
           <p className="mx-auto max-w-2xl text-base text-slate-600">
-            We use the name saved during onboarding so your peers recognise you the moment you enter. Pick a college below to see what graduates are sharing right now.
+            Pick a college below to see what graduates are sharing right now.
           </p>
         </header>
 

@@ -406,15 +406,15 @@ async def update_card_endpoint(request: UpdateCardRequest):
     if not request.card_name:
         raise HTTPException(status_code=400, detail="card_name is required")
     
-    try:
-        update_user_preference(request.card_name, request.completed)
-        return {
-            "success": True,
-            "card_name": request.card_name,
-            "completed": request.completed
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # try:
+    #     update_user_preference(request.card_name, request.completed)
+    #     return {
+    #         "success": True,
+    #         "card_name": request.card_name,
+    #         "completed": request.completed
+    #     }
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 @app.post('/api/login')
 def login(credentials: LoginRequest):

@@ -4,29 +4,93 @@ import { Check, ChevronRight, Rocket, Target, Heart, Sparkles, ArrowLeft } from 
 import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
 import SupportDashboard from "../components/SupportDashboard.jsx";
 
-// ----------------------------- Mock API
-const mockApi = {
+// ----------------------------- Real API (Connected to ChromaDB)
+const api = {
   async createAccount(profile) {
-    // Simulate an ID and persistence
-    const user = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...profile };
-    localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("gradpath:user-updated"));
+    console.log("📤 Creating user in ChromaDB...", profile);
+
+    try {
+      // Call backend to create user
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profile.name,
+          email: profile.email,
+          birthday: profile.birthday || '',
+          major: profile.major || '',
+          location: profile.location || ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create user: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ User created in backend:", data);
+
+      // Extract user from response
+      const user = data.user;
+
+      // Also save to localStorage for quick access
+      localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("gradpath:user-updated"));
+      }
+
+      return user;
+    } catch (error) {
+      console.error("❌ Failed to create user:", error);
+      // Fallback to localStorage-only mode
+      const user = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...profile };
+      localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+      return user;
     }
-    await new Promise((r) => setTimeout(r, 300));
-    return user;
   },
+
   async savePreferences(userId, prefs) {
-    const stored = { userId, savedAt: new Date().toISOString(), ...prefs };
-    localStorage.setItem(LS_KEYS.prefs, JSON.stringify(stored));
-    await new Promise((r) => setTimeout(r, 250));
-    return stored;
+    console.log("📤 Saving preferences to ChromaDB...", { userId, prefs });
+
+    try {
+      // Call backend to save preferences and generate embedding
+      const response = await fetch(`/api/users/${userId}/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          favorites: prefs.favorites || [],
+          goals: prefs.goals || []
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save preferences: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Preferences saved, embedding generated:", data);
+
+      // Save to localStorage
+      const stored = { userId, savedAt: new Date().toISOString(), ...prefs };
+      localStorage.setItem(LS_KEYS.prefs, JSON.stringify(stored));
+
+      return stored;
+    } catch (error) {
+      console.error("❌ Failed to save preferences:", error);
+      // Fallback to localStorage only
+      const stored = { userId, savedAt: new Date().toISOString(), ...prefs };
+      localStorage.setItem(LS_KEYS.prefs, JSON.stringify(stored));
+      return stored;
+    }
   },
+
   async saveRecommendations(userId, recs) {
+    // Keep this localStorage-only for now (recommendations not persisted to backend yet)
     const payload = { userId, generatedAt: new Date().toISOString(), items: recs };
     localStorage.setItem(LS_KEYS.recs, JSON.stringify(payload));
     return payload;
   },
+
   loadAll: loadSupportData,
 };
 
@@ -210,7 +274,7 @@ function AccountForm({ onComplete, initialUser }) {
           window.dispatchEvent(new Event("gradpath:user-updated"));
         }
       } else {
-        user = await mockApi.createAccount({ name, birthday, major, location, email });
+        user = await api.createAccount({ name, birthday, major, location, email });
       }
       onComplete(user);
     } catch (err) {
@@ -275,10 +339,10 @@ function PreferencesForm({ user, onComplete, initialFavorites = [], initialGoals
     setLoading(true);
     try {
       if (favorites.length === 0 || goals.length === 0) throw new Error("Add at least one favorite and one goal.");
-      const prefs = await mockApi.savePreferences(user.id, { favorites, goals });
+      const prefs = await api.savePreferences(user.id, { favorites, goals });
       const recs = await generateRecommendations(user, favorites, goals)
-      
-      await mockApi.saveRecommendations(user.id, recs);
+
+      await api.saveRecommendations(user.id, recs);
       onComplete({ user, prefs, recs });
     } catch (err) {
       setError(err.message);
@@ -416,7 +480,7 @@ function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
       const updated = [...prevRecs];
       updated[index] = { ...updated[index], completed: !updated[index].completed };
       // Optionally save to localStorage
-      mockApi.saveRecommendations(user.id, updated);
+      api.saveRecommendations(user.id, updated);
       return updated;
     });
   };
@@ -425,11 +489,11 @@ function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
     setUpdating(true);
     try {
       // Save updated preferences
-      const updatedPrefs = await mockApi.savePreferences(user.id, { favorites, goals: editedGoals });
-      
+      const updatedPrefs = await api.savePreferences(user.id, { favorites, goals: editedGoals });
+
       // Generate new recommendations based on updated goals
       const newRecs = await generateRecommendations(user, favorites, editedGoals);
-      await mockApi.saveRecommendations(user.id, newRecs);
+      await api.saveRecommendations(user.id, newRecs);
       
       // Update parent component state if callback provided
       if (onUpdatePreferences) {
@@ -606,7 +670,7 @@ export default function NewGradOnboarding() {
 
   // Bootstrap from localStorage (resume session)
   useEffect(() => {
-    const { user: u, prefs: p, recs: r } = mockApi.loadAll();
+    const { user: u, prefs: p, recs: r } = api.loadAll();
     if (u) setUser(u);
     if (p) setPrefs(p);
     if (r?.items) setRecs(r.items);

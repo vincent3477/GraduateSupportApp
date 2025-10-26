@@ -6,6 +6,25 @@ import { loadSupportData } from "../utils/supportStorage.js";
 import PageBackButton from "../components/PageBackButton.jsx";
 
 const CHAT_SERVER_URL = import.meta.env.VITE_CHAT_SERVER_URL ?? "http://localhost:4000";
+const COMMUNITY_SYSTEM_NAME = "GradPath Community";
+const createId = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const formatMessage = (entry, fallbackName = COMMUNITY_SYSTEM_NAME) => {
+  if (!entry) return null;
+  const timestamp = entry.timestamp ?? entry.time ?? new Date().toISOString();
+  const text = (entry.message ?? entry.text ?? "").trim();
+  if (!text) return null;
+  return {
+    id: entry.id ?? createId(),
+    username: entry.name || entry.username || fallbackName,
+    text,
+    time: moment(timestamp).format("h:mm A"),
+    type: entry.type ?? "chat",
+  };
+};
 
 const RoomChat = () => {
   const { roomId } = useParams();
@@ -33,7 +52,7 @@ const RoomChat = () => {
       .then((io) => {
         const client = io(CHAT_SERVER_URL, { transports: ["websocket"], autoConnect: true });
         setSocket(client);
-        client.emit("joinRoom", { profile, room: roomId });
+        client.emit("join_room", { room: roomId, name: displayName });
         setHasJoined(true);
         setStatusMessage("");
       })
@@ -55,17 +74,41 @@ const RoomChat = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("message", (payload) => {
-      setMessages((prev) => [...prev, payload]);
+    socket.on("chat_history", (history = []) => {
+      setMessages(history.map((item) => formatMessage(item)).filter(Boolean));
     });
 
-    socket.on("roomUsers", ({ users }) => {
-      setMembers(users || []);
+    socket.on("chat_message", (payload) => {
+      const formatted = formatMessage(payload);
+      if (!formatted) return;
+      setMessages((prev) => [...prev, formatted]);
+    });
+
+    socket.on("system_message", (payload) => {
+      const formatted = formatMessage({
+        ...payload,
+        name: COMMUNITY_SYSTEM_NAME,
+        type: "system",
+      });
+      if (!formatted) return;
+      setMessages((prev) => [...prev, formatted]);
+    });
+
+    socket.on("room_users", (users = []) => {
+      setMembers(
+        users.map((user) => ({
+          id: user.id,
+          username: user.name || user.username || "Friend",
+          profile: user.profile ?? {},
+        }))
+      );
     });
 
     return () => {
-      socket.off("message");
-      socket.off("roomUsers");
+      socket.off("chat_history");
+      socket.off("chat_message");
+      socket.off("system_message");
+      socket.off("room_users");
     };
   }, [socket]);
 
@@ -80,7 +123,7 @@ const RoomChat = () => {
 
   const leaveRoom = () => {
     if (socket) {
-      socket.emit("leaveRoom");
+      socket.emit("leave_room");
       socket.disconnect();
       setSocket(null);
     }
@@ -95,7 +138,7 @@ const RoomChat = () => {
     if (!socket) return;
     const message = event.target.elements.message.value.trim();
     if (!message) return;
-    socket.emit("chatMessage", message);
+    socket.emit("chat_message", { room: roomId, message });
     event.target.reset();
   };
 
@@ -170,13 +213,18 @@ const RoomChat = () => {
               {messages.length === 0 ? (
                 <p className="text-sm text-slate-500">Messages will appear here once someone speaks up.</p>
               ) : (
-                messages.map((msg, idx) => (
-                  <div key={`${msg.time}-${idx}`} className="rounded-2xl bg-[#f3f4ff] px-4 py-3 shadow-sm">
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`rounded-2xl px-4 py-3 shadow-sm ${
+                      msg.type === "system" ? "bg-[#fff7ed]" : "bg-[#f3f4ff]"
+                    }`}
+                  >
                     <p className="text-xs font-semibold text-[#2F4D6A]">
                       {msg.username}
-                      <span className="ml-2 text-[11px] uppercase tracking-[0.3em] text-slate-400">{msg.time}</span>
+                      <span className="ml-2 text-[11px] text-slate-400">{msg.time}</span>
                     </p>
-                    <p className="mt-1 text-sm text-slate-700">{msg.text}</p>
+                    <p className="mt-1 text-sm text-slate-700 whitespace-pre-line">{msg.text}</p>
                   </div>
                 ))
               )}

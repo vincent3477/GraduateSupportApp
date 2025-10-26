@@ -101,15 +101,15 @@ function ChipsInput({ label, values, setValues, max = 3, placeholder }) {
         {values.map((v, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-sm"
+            className="inline-flex items-center gap-2 rounded-full border border-[#d8d2c0] bg-white px-3 py-1 text-sm text-slate-700 shadow-sm"
           >
             {v}
             <button
               onClick={() => remove(i)}
-              className="rounded-full p-1 hover:bg-slate-100"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#2F4D6A] text-xs font-bold text-[#2F4D6A] transition hover:bg-[#2F4D6A] hover:text-[#FFFDF6]"
               aria-label={`Remove ${v}`}
             >
-              
+              ×
             </button>
           </span>
         ))}

@@ -305,7 +305,8 @@ async def get_recommendations_endpoint(
     location: Optional[str] = Query(None),
     favorites: List[str] = Query([]),
     goals: List[str] = Query([]),
-current_user: dict = Depends(get_current_user)):
+# current_user: dict = Depends(get_current_user)
+):
     """
     GET endpoint to generate recommendations
     Returns: JSON array of cards [{name, desc, completed}, ...]
@@ -315,7 +316,7 @@ current_user: dict = Depends(get_current_user)):
     print(f"   favorites={favorites}")
     print(f"   goals={goals}")
 
-    user_id = current_user['user_id']
+    # user_id = current_user['user_id']
     
     # Build query for agent
     query_parts = []

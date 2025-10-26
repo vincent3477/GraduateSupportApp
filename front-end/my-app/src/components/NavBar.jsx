@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Sparkles, LogOut, LogIn, LayoutDashboard } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import logoMark from "../assets/logo.svg";
 import { LS_KEYS, loadSupportData } from "../utils/supportStorage.js";
 
@@ -8,6 +8,8 @@ const NavBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(() => loadSupportData().user);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const handleContactClick = useCallback(() => {
     if (location.pathname !== "/") {
@@ -27,6 +29,7 @@ const NavBar = () => {
     };
 
     syncProfile();
+    setMenuOpen(false);
 
     const handleStorage = (event) => {
       if (event.key && event.key !== LS_KEYS.user) return;
@@ -45,7 +48,29 @@ const NavBar = () => {
   useEffect(() => {
     const { user } = loadSupportData();
     setProfile(user || null);
+    setMenuOpen(false);
   }, [location.key, location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  const handleLogout = useCallback(() => {
+    [LS_KEYS.user, LS_KEYS.prefs, LS_KEYS.recs, LS_KEYS.chat].forEach((key) => {
+      localStorage.removeItem(key);
+    });
+    setProfile(null);
+    setMenuOpen(false);
+    window.dispatchEvent(new Event("gradpath:user-updated"));
+    navigate("/login");
+  }, [navigate]);
 
   const displayName = profile?.name?.trim() || profile?.username?.trim() || "";
   const shortName = displayName ? displayName.split(" ")[0] : "";
@@ -92,31 +117,53 @@ const NavBar = () => {
         </nav>
 
         {profile ? (
-          <Link
-            to="/support"
-            className="interactive inline-flex items-center gap-3 rounded-full border border-[#d8d2c0] bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#2F4D6A] hover:text-[#2F4D6A]"
-            aria-label={`Open ${displayName || "your"} support board`}
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={`${displayName}'s avatar`}
-                className="h-9 w-9 rounded-full object-cover shadow-sm"
-              />
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F4D6A]/10 text-base font-semibold text-[#2F4D6A] shadow-sm">
-                {initials}
-              </span>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="flex items-center gap-2 rounded-full px-2 py-1 text-sm font-semibold text-slate-700 transition hover:text-[#2F4D6A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2F4D6A]/40 bg-transparent hover:bg-transparent active:bg-transparent"
+              style={{ backgroundColor: "transparent" }}
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={`${displayName}'s avatar`}
+                  className="h-9 w-9 rounded-full object-cover shadow-sm"
+                />
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d8d2c0] bg-white text-base font-semibold text-[#2F4D6A]">
+                  {initials}
+                </span>
+              )}
+              <span className="text-slate-700">{shortName || displayName || "Your profile"}</span>
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-[#e4dcc4] bg-white/95 p-2 text-sm text-slate-700 shadow-lg shadow-[#e4dcc4]/10">
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[#b91c1c] transition hover:bg-[#fee2e2] hover:text-[#7f1d1d]"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </button>
+              </div>
             )}
-            <span className="pr-2">{shortName || displayName || "Your profile"}</span>
-          </Link>
+          </div>
         ) : (
           <div className="flex items-center gap-3 text-sm font-semibold">
             <Link
               to="/login"
               className="interactive rounded-full border border-transparent px-4 py-2 text-slate-600 transition hover:text-[#2F4D6A]"
             >
-              Log in
+              <span className="inline-flex items-center gap-1">
+                <LogIn className="h-4 w-4" />
+                Log in
+              </span>
             </Link>
             <Link
               to="/onboarding"

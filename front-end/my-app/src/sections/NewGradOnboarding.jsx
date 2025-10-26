@@ -346,7 +346,7 @@ function CommunityChat() {
 }
 
 // ----------------------------- Dashboard
-// ----------------------------- Dashboard
+
 function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
   const { favorites = [], goals = [] } = prefs || {};
   const [localRecs, setLocalRecs] = useState(recs);
@@ -481,7 +481,7 @@ function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
         <CommunityChat />
       </div>
       
-      {/* Goals Edit Popup */}
+      
       <AnimatePresence>
         {showGoalsPopup && (
           <motion.div
@@ -558,6 +558,7 @@ function Dashboard({ user, prefs, recs, onUpdatePreferences }) {
     </div>
   );
 }
+
 
 // ----------------------------- Root
 export default function NewGradOnboarding() {

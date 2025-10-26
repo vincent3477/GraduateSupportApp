@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Login = ({ setIsAuthenticated }) => {
+const Register = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -10,20 +10,23 @@ const Login = ({ setIsAuthenticated }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name}),
       });
 
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
+      if (response.status == 400) {
+        throw new Error('Username already exists!');
+      }
+      else if (!response.ok){
+        throw new Error('A server side error has occurrred.')
       }
 
       const data = await response.json();
@@ -41,35 +44,48 @@ const Login = ({ setIsAuthenticated }) => {
 
     <div className="min-h-screen bg-gradient-to-br from-[#FFFDF6] via-white to-[#f0ede2] px-4 py-20 text-slate-900">
       <div className="mx-auto max-w-md rounded-3xl border border-[#e4dcc4] bg-white/90 p-8 shadow-2xl shadow-[#2F4D6A]/10 backdrop-blur">
-        <h1 className="text-3xl font-semibold text-slate-900">Welcome back</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Welcome</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Enter the details you used during onboarding to jump straight into your support board.
+          Hi, welcome aboard! We hope this will be helpful in supporting as you find your path.
         </p>
-        <form onSubmit={handleLogin} className="mt-8 space-y-5">
+        <form onSubmit={handleRegister} className="mt-8 space-y-5">
           <div className="flex flex-col gap-2">
-            <label htmlFor="login-email" className="text-sm font-medium text-slate-700">
-              Email
+            <label htmlFor="register-name" className="text-sm font-medium text-slate-700">
+              Full name
             </label>
             <input
-              id="login-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="register-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Alex Kim"
               className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
               required
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="login-password" className="text-sm font-medium text-slate-700">
+            <label htmlFor="register-email" className="text-sm font-medium text-slate-700">
+              Email
+            </label>
+            <input
+              id="register-email"
+              type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="alex@email.com"
+              className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="register-password" className="text-sm font-medium text-slate-700">
               Password
             </label>
             <input
-              id="login-password"
+              id="register-password"
               type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="alex@email.com"
               className="rounded-2xl border border-[#d8d2c0] bg-white px-4 py-2 text-slate-700 outline-none focus:border-[#2F4D6A]"
               required
             />
@@ -83,9 +99,9 @@ const Login = ({ setIsAuthenticated }) => {
           </button>
         </form>
         <p className="mt-6 text-center text-xs text-slate-500">
-          Need to create your profile?{" "}
-          <a href="/register" className="interactive inline-flex items-center font-semibold text-[#2F4D6A]">
-            Start onboarding
+          Already have an account?{" "}
+          <a href="/Login" className="interactive inline-flex items-center font-semibold text-[#2F4D6A]">
+            Log back in
           </a>
         </p>
       </div>
@@ -93,4 +109,4 @@ const Login = ({ setIsAuthenticated }) => {
   );
 };
 
-export default Login;
+export default Register;

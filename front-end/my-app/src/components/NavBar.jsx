@@ -1,9 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, LogOut } from "lucide-react";
 import { useCallback } from "react";
 import logoMark from "../assets/logo.svg";
 
-const NavBar = () => {
+const NavBar = ({isAuthenticated, setIsAuthenticated}) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -17,6 +17,22 @@ const NavBar = () => {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [location.pathname, navigate]);
+
+  const handleSignOut = useCallback(async() => {
+    localStorage.removeItem('authToken');
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    setIsAuthenticated(false);
+    navigate('/')
+  },[setIsAuthenticated, navigate]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#e4dcc4] bg-[rgba(255,253,246,0.92)] backdrop-blur">
@@ -43,19 +59,33 @@ const NavBar = () => {
         </nav>
 
         <div className="flex items-center gap-3 text-sm font-semibold">
-          <Link
-            to="/login"
-            className="interactive rounded-full border border-transparent px-4 py-2 text-slate-600 transition hover:text-[#2F4D6A]"
-          >
-            Log in
-          </Link>
-          <Link
-            to="/onboarding"
-            className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
-          >
-            <Sparkles className="h-4 w-4" />
-            Sign up
-          </Link>
+          {isAuthenticated ? (
+            // Signed in - show sign out
+            <button
+              onClick={handleSignOut}
+              className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          ) : (
+            // Not signed in - show login and signup
+            <>
+              <Link
+                to="/login"
+                className="interactive rounded-full border border-transparent px-4 py-2 text-slate-600 transition hover:text-[#2F4D6A]"
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                className="interactive inline-flex items-center gap-2 rounded-full bg-[#2F4D6A] px-5 py-2 text-sm font-semibold text-[#FFFDF6] shadow shadow-[#2F4D6A]/20 transition hover:bg-[#375d80]"
+              >
+                <Sparkles className="h-4 w-4" />
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

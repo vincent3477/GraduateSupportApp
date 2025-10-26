@@ -78,48 +78,86 @@ const PrivateMatchChat = () => {
     currentGoal: "Refining story arcs for fellowship interviews"
   };
 
-  const rawPeer = user?.matchedPeer || {};
-  const matchedPeer = {
-    ...fallbackPeer,
-    ...rawPeer,
-    sharedFocus:
-      Array.isArray(rawPeer.sharedFocus) && rawPeer.sharedFocus.length
-        ? rawPeer.sharedFocus
-        : fallbackPeer.sharedFocus,
-    responseTime: rawPeer.responseTime || fallbackPeer.responseTime,
-    currentGoal: rawPeer.currentGoal || fallbackPeer.currentGoal
-  };
+  // State for real matched peer from ChromaDB
+  const [matchedPeer, setMatchedPeer] = useState(fallbackPeer);
+
+  // Fetch top matched peer from ChromaDB
+  useEffect(() => {
+    if (!user?.id) {
+      console.log("⚠️ No user ID, using fallback peer");
+      return;
+    }
+
+    const fetchMatchedPeer = async () => {
+      console.log("🔍 Fetching top matched peer for:", user.id);
+
+      try {
+        const response = await fetch(`/api/users/${user.id}/similar?top_k=1`);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Got matched peer:", data);
+
+        if (data.similar_users && data.similar_users.length > 0) {
+          const peer = data.similar_users[0];
+          setMatchedPeer({
+            name: peer.name,
+            role: `${peer.major} · Matched Peer`,
+            location: peer.location,
+            sharedFocus: peer.goals || [],
+            responseTime: "Usually replies within a few hours",
+            currentGoal: peer.goals?.[0] || "Building their career path"
+          });
+        }
+      } catch (error) {
+        console.error("❌ Failed to fetch matched peer:", error);
+        // Keep fallback peer on error
+      }
+    };
+
+    fetchMatchedPeer();
+  }, [user?.id]);
+
   const partnerFirstName = matchedPeer.name?.split(" ")[0] || "Partner";
 
-// Update the initialMessages useMemo:
-const initialMessages = useMemo(() => {
-  const saved = normalizeMessages(supportData.chat);
-  if (saved && saved.length) {
-    return saved;
-  }
-  return [
-    {
-      id: createId(),
-      sender: "partner",
-      text: `Hey ${firstName}! The matching prototype paired us because we share a focus on thoughtful pivots. Ready when you are.`,
-      timestamp: formatTime(subtractTime(2, 'hours')) // Changed
-    },
-    {
-      id: createId(),
-      sender: "you",
-      text: "Hi Alex! Thanks for reaching out — would love to keep you in the loop as I test my narrative for product roles.",
-      timestamp: formatTime(subtractTime(1, 'hours')) // Changed
-    },
-    {
-      id: createId(),
-      sender: "partner",
-      text: "Amazing. Drop a note anytime you want feedback or a pep talk. I'll keep an eye on your updates here.",
-      timestamp: formatTime(subtractTime(58, 'minutes')) // Changed
-    }
-  ];
-}, [supportData.chat, firstName]);
+  const [messages, setMessages] = useState([]);
 
-  const [messages, setMessages] = useState(initialMessages);
+  // Update messages when peer is loaded or from localStorage
+  useEffect(() => {
+    const saved = normalizeMessages(supportData.chat);
+    if (saved && saved.length) {
+      setMessages(saved);
+      return;
+    }
+
+    const peerFirstName = matchedPeer.name?.split(" ")[0] || "Partner";
+
+    const defaultMessages = [
+      {
+        id: createId(),
+        sender: "partner",
+        text: `Hey ${firstName}! The matching prototype paired us because we share similar career goals. Ready when you are.`,
+        timestamp: formatTime(subtractTime(2, 'hours'))
+      },
+      {
+        id: createId(),
+        sender: "you",
+        text: `Hi ${peerFirstName}! Thanks for reaching out — would love to keep you in the loop as I navigate my next steps.`,
+        timestamp: formatTime(subtractTime(1, 'hours'))
+      },
+      {
+        id: createId(),
+        sender: "partner",
+        text: "Amazing. Drop a note anytime you want feedback or a pep talk. I'll keep an eye on your updates here.",
+        timestamp: formatTime(subtractTime(58, 'minutes'))
+      }
+    ];
+
+    setMessages(defaultMessages);
+  }, [supportData.chat, firstName, matchedPeer.name]);
   const [draft, setDraft] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messageListRef = useRef(null);
